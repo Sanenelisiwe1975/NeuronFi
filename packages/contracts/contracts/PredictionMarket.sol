@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./OutcomeToken.sol";
+import "./iMarket.sol";
 
 /**
  * @title PredictionMarket
@@ -38,6 +39,9 @@ contract PredictionMarket is Ownable, ReentrancyGuard {
     /// @notice Resolved outcome (UNRESOLVED until resolution).
     Outcome public resolvedOutcome;
 
+    /// @notice Authorised external resolver (e.g. MarketResolver contract).
+    address public resolver;
+
     /// @notice Timestamp after which no new positions can be entered.
     uint256 public immutable closingTime;
 
@@ -66,6 +70,14 @@ contract PredictionMarket is Ownable, ReentrancyGuard {
     error MarketAlreadyResolved();
     error ZeroAmount();
     error InsufficientOutput(uint256 minOut, uint256 actualOut);
+
+    modifier onlyOwnerOrResolver() {
+        require(
+            msg.sender == owner() || msg.sender == resolver,
+            "PredictionMarket: not owner or resolver"
+        );
+        _;
+    }
 
     constructor(
         string memory question_,
@@ -171,11 +183,19 @@ contract PredictionMarket is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice Resolve the market with its final outcome.
-     * @dev In production, this is called by an oracle or a multisig.
-     *      For the hackathon, the owner (deployer) resolves manually.
+     * @notice Designate an external resolver (e.g. MarketResolver contract).
+     *         Only the owner can set this. Once set, the resolver address can
+     *         also call resolve() — enabling on-chain AI oracle resolution.
      */
-    function resolve(bool yesWon) external onlyOwner {
+    function setResolver(address resolver_) external onlyOwner {
+        resolver = resolver_;
+    }
+
+    /**
+     * @notice Resolve the market with its final outcome.
+     *         Callable by owner (deployer) or the registered resolver contract.
+     */
+    function resolve(bool yesWon) external onlyOwnerOrResolver {
         if (resolvedOutcome != Outcome.UNRESOLVED) revert MarketAlreadyResolved();
         resolvedOutcome = yesWon ? Outcome.YES : Outcome.NO;
         emit MarketResolved(resolvedOutcome);
@@ -198,6 +218,42 @@ contract PredictionMarket is Ownable, ReentrancyGuard {
         uint256 total = yesReserve + noReserve;
         if (total == 0) return 5e17; // 50% default
         return (noReserve * 1e18) / total;
+    }
+
+    /**
+     * @notice Returns market state in the IMarket.MarketInfo format.
+     * @dev    Enables ConditionalPayment and other IMarket-compatible contracts
+     *         to read this market's state without knowing its internal layout.
+     *
+     *         Enum mapping (values are identical, so direct uint8 cast is safe):
+     *           Outcome.UNRESOLVED (0) → OutcomeIndex.INVALID (0)
+     *           Outcome.YES        (1) → OutcomeIndex.YES     (1)
+     *           Outcome.NO         (2) → OutcomeIndex.NO      (2)
+     */
+    function getMarketInfo() external view returns (IMarket.MarketInfo memory info) {
+        IMarket.MarketState state;
+        if (resolvedOutcome != Outcome.UNRESOLVED) {
+            state = IMarket.MarketState.RESOLVED;
+        } else if (block.timestamp >= closingTime) {
+            state = IMarket.MarketState.CLOSED;
+        } else {
+            state = IMarket.MarketState.OPEN;
+        }
+
+        info = IMarket.MarketInfo({
+            marketId:        bytes32(uint256(uint160(address(this)))),
+            question:        question,
+            createdAt:       0,
+            closesAt:        uint64(closingTime),
+            resolvesAt:      0,
+            state:           state,
+            resolution:      IMarket.OutcomeIndex(uint8(resolvedOutcome)), // safe: enums share same values
+            collateralToken: address(usdt),
+            yesToken:        address(yesToken),
+            noToken:         address(noToken),
+            totalLiquidity:  totalDeposited,
+            feeBps:          feeBps
+        });
     }
 
     /**

@@ -9,22 +9,24 @@ Built for the **Tether Hackathon Galáctica: WDK Edition 1** — Track: **Autono
 ## How It Works
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                        Agent Loop                            │
-│                                                              │
-│  Observe  →  Reason  →  Decide  →  Execute  →  Learn        │
-│    │            │           │          │           │         │
-│  Prices      Claude       EV + Risk   WDK +      Postgres    │
-│  Gas         Planning     Gates       Contracts   Redis       │
-│  Liquidity   (LangChain)             Transfers   JSON log    │
-└──────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                           Agent Loop                                 │
+│                                                                      │
+│  Observe → Reason → Decide → Execute → Resolve → Learn               │
+│    │          │        │        │          │         │               │
+│  Prices    Claude    EV +     WDK +     AI Oracle  Postgres          │
+│  Gas       Sonnet    Risk     Contracts  on-chain   Redis            │
+│  Vault     Plan      Gates    + Cond.    rationale  JSON log         │
+│  Markets           Payment  escrow                                   │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-1. **Observe** — fetches ETH/USDT/XAUT prices (Chainlink + CoinGecko fallback), gas snapshot, Uniswap V3 liquidity, and active prediction market opportunities. Checks vault balance and auto-tops-up if agent USDT drops below $50.
+1. **Observe** — fetches ETH/USDT/XAUT prices (Chainlink + CoinGecko fallback), gas snapshot, Uniswap V3 liquidity, and active prediction market opportunities. Auto-tops-up agent USDT from `AgentVault` if balance drops below $50.
 2. **Reason** — sends the full market state to Claude Sonnet via LangChain.js; receives a ranked list of `AgentAction` objects (OpenClaw-style planning engine).
 3. **Decide** — applies global risk gates (USDT depeg halt, gas congestion halt) and per-action filters (min EV > 2%, max position size 5%, risk score ≤ 70).
-4. **Execute** — routes approved actions to on-chain operations via the Tether WDK (`transferUSDT`, `transferXAUT`) and direct Solidity contract calls (`enterPosition`, `redeem`).
-5. **Learn** — persists cycle outcomes to a JSON log, PostgreSQL, and Redis; updates Bayesian priors per action type.
+4. **Execute** — routes approved actions via the Tether WDK (`transferUSDT`, `transferXAUT`) and direct Solidity calls (`enterPosition`, `redeem`). After each market entry, locks a 1% performance fee in `ConditionalPayment` — released to treasury only if the prediction is correct.
+5. **Resolve** — after a market closes, the agent fetches the Chainlink price, compares it to the question threshold, calls `MarketResolver.aiResolve()` with a full rationale stored permanently on-chain, then finalises after the 24-hour dispute window.
+6. **Learn** — persists cycle outcomes to a JSON log, PostgreSQL, and Redis; updates Bayesian priors per action type.
 
 ---
 
@@ -91,12 +93,16 @@ npm run build
 
 ```bash
 cd packages/contracts
-node scripts/deploy-all.mjs          # deploys AgentVault + MarketFactory
-node scripts/set-vault-agent.mjs     # authorises WDK wallet on vault
-node scripts/create-market.mjs       # creates first prediction market
+node scripts/deploy.mjs              # deploys AgentVault + MarketFactory
+node scripts/set-vault-agent.mjs     # authorises WDK wallet on AgentVault
+node scripts/deploy-resolver.mjs     # deploys MarketResolver + first PredictionMarket
+node scripts/deploy-conditional.mjs  # deploys ConditionalPayment + IMarket-compatible market
 ```
 
-Copy the output addresses into `packages/agent/.env` as `AGENT_VAULT_ADDRESS` and `MARKET_FACTORY_ADDRESS`.
+Copy the printed addresses into `packages/agent/.env`:
+- `AGENT_VAULT_ADDRESS`, `MARKET_FACTORY_ADDRESS`
+- `MARKET_RESOLVER_ADDRESS`
+- `CONDITIONAL_PAYMENT_ADDRESS`, `TREASURY_ADDRESS`
 
 ### 7. Run the agent
 
@@ -128,6 +134,9 @@ npm run dev --workspace=apps/web
 | `XAUT_CONTRACT_ADDRESS` | Yes | XAU₮ ERC-20 contract address |
 | `AGENT_VAULT_ADDRESS` | Yes | Deployed AgentVault contract address |
 | `MARKET_FACTORY_ADDRESS` | Yes | Deployed MarketFactory contract address |
+| `MARKET_RESOLVER_ADDRESS` | Yes | Deployed MarketResolver contract address |
+| `CONDITIONAL_PAYMENT_ADDRESS` | Yes | Deployed ConditionalPayment contract address |
+| `TREASURY_ADDRESS` | Yes | Address that receives performance fees on correct predictions |
 | `AGENT_DRY_RUN` | No | `true` = log only, no real txs (default: `true`) |
 | `AGENT_LOOP_INTERVAL_MS` | No | Loop interval in ms (default: `60000`) |
 | `LLM_MODEL` | No | Claude model override (default: `claude-sonnet-4-6`) |
@@ -141,10 +150,12 @@ See `.env.example` for the full list with default values.
 
 | Contract | Address | Purpose |
 |---|---|---|
-| `AgentVault` | `0x824a901E3609C5d8D6F874b31Fe736364190119D` | Holds USD₮; enforces daily withdrawal limit |
+| `AgentVault` | `0x824a901E3609C5d8D6F874b31Fe736364190119D` | Holds USD₮; enforces $1,000/day agent withdrawal limit |
 | `MarketFactory` | `0x3947C99650879990cB2c0C0cbB22FE71e5CF11f9` | Creates and registers PredictionMarket instances |
-| `PredictionMarket` | `0x6A58ee4901670b915Ca085db5A5d6e508d6400e5` | Binary AMM — YES/NO outcome token market |
+| `PredictionMarket` | `0xbfDa4f28C0df0ad6d3c7366667934F9c866483Bd` | Binary AMM — YES/NO outcome token market (IMarket-compatible) |
 | `OutcomeToken` | (deployed by market) | ERC-20 representing a single market outcome |
+| `MarketResolver` | `0x8e50025719b9f605C11Eb43c1683C9536eAdc8B0` | Multi-path resolution: AI oracle, Chainlink, UMA, multisig |
+| `ConditionalPayment` | `0xca2b23094987a1Cc0100A291eD701085464B4aE9` | Outcome-linked USDT escrow — performance fee released only if prediction is correct |
 
 ---
 

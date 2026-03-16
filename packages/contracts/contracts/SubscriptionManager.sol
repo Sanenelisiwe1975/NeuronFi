@@ -1,22 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "../interfaces/IERC20.sol";
+import "./IERC20Extended.sol";
 
 
+contract SubscriptionManager {
 
-contract Subscription{
-
-    enum Plan{FREE, BASIC, PRO, INSTITUTIONAL }
+    enum Plan { FREE, BASIC, PRO, INSTITUTIONAL }
 
     struct PlanConfig {
-        uint256 pricePerPeriod;   
-        uint256 period;           
-        uint256 gracePeriod;      
+        uint256 pricePerPeriod;
+        uint256 period;
+        uint256 gracePeriod;
         bool    active;
     }
 
-    struct Subscription {
+    struct SubscriptionRecord {
         address subscriber;
         Plan    plan;
         uint256 startedAt;
@@ -25,13 +24,12 @@ contract Subscription{
         bool    cancelled;
     }
 
-
     address public owner;
     address public treasury;
-    address public collateraToken;
+    address public collateralToken;
 
     mapping(Plan => PlanConfig) public plans;
-    mapping(address => Subscription) public subscriptions;
+    mapping(address => SubscriptionRecord) public subscriptions;
 
     uint256 public totalRevenue;
     uint256 public activeSubscribers;
@@ -89,7 +87,7 @@ contract Subscription{
         PlanConfig storage config = plans[plan];
         if (!config.active) revert PlanNotActive();
 
-        Subscription storage sub = subscriptions[msg.sender];
+        SubscriptionRecord storage sub = subscriptions[msg.sender];
         if (sub.startedAt != 0 && !sub.cancelled && isActive(msg.sender))
             revert AlreadySubscribed();
 
@@ -101,7 +99,7 @@ contract Subscription{
 
         uint256 paidUntil = block.timestamp + config.period;
 
-        subscriptions[msg.sender] = Subscription({
+        subscriptions[msg.sender] = SubscriptionRecord({
             subscriber: msg.sender,
             plan:       plan,
             startedAt:  block.timestamp,
@@ -114,7 +112,6 @@ contract Subscription{
         emit Subscribed(msg.sender, plan, paidUntil);
     }
 
-    
 
     function subscribeWithPermit(
         Plan    plan,
@@ -135,7 +132,7 @@ contract Subscription{
         }
 
         uint256 paidUntil = block.timestamp + config.period;
-        subscriptions[msg.sender] = Subscription({
+        subscriptions[msg.sender] = SubscriptionRecord({
             subscriber: msg.sender,
             plan:       plan,
             startedAt:  block.timestamp,
@@ -150,7 +147,7 @@ contract Subscription{
 
 
     function renew(address subscriber) external returns (uint256 newPaidUntil) {
-        Subscription storage sub = subscriptions[subscriber];
+        SubscriptionRecord storage sub = subscriptions[subscriber];
         if (sub.startedAt == 0)  revert NotSubscribed();
         if (sub.cancelled)       revert AlreadyCancelled();
 
@@ -163,7 +160,6 @@ contract Subscription{
             sub.totalPaid += price;
         }
 
-        
         uint256 base   = sub.paidUntil > block.timestamp ? sub.paidUntil : block.timestamp;
         newPaidUntil   = base + config.period;
         sub.paidUntil  = newPaidUntil;
@@ -171,9 +167,8 @@ contract Subscription{
         emit Renewed(subscriber, newPaidUntil, price);
     }
 
-
     function cancel() external {
-        Subscription storage sub = subscriptions[msg.sender];
+        SubscriptionRecord storage sub = subscriptions[msg.sender];
         if (sub.startedAt == 0) revert NotSubscribed();
         if (sub.cancelled)      revert AlreadyCancelled();
 
@@ -184,7 +179,7 @@ contract Subscription{
 
 
     function isActive(address account) public view returns (bool) {
-        Subscription storage sub = subscriptions[account];
+        SubscriptionRecord storage sub = subscriptions[account];
         if (sub.startedAt == 0 || sub.cancelled) return false;
         PlanConfig storage config = plans[sub.plan];
         return block.timestamp <= sub.paidUntil + config.gracePeriod;
@@ -194,10 +189,9 @@ contract Subscription{
         return subscriptions[account].plan;
     }
 
-    function getSubscription(address account) external view returns (Subscription memory) {
+    function getSubscriptionRecord(address account) external view returns (SubscriptionRecord memory) {
         return subscriptions[account];
     }
-
 
     function configurePlan(
         Plan    plan,

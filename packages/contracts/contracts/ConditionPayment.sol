@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "../interfaces/IERC20.sol";
-import "../interfaces/IMarket.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./iMarket.sol";
 
 
  
@@ -130,7 +130,7 @@ contract ConditionalPayment {
         // Only refund if market is not resolved with the trigger outcome
         bool triggered = (info.state == IMarket.MarketState.RESOLVED &&
                           info.resolution == p.triggerOutcome);
-        require(!triggered, "Market triggered — claim instead");
+        require(!triggered, "Market triggered - claim instead");
 
         uint256 remaining = p.totalAmount - p.claimedAmount;
         p.cancelled = true;

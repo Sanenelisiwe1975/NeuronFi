@@ -51,6 +51,34 @@ export const ERC20_ABI = [
   "function balanceOf(address account) external view returns (uint256)",
 ];
 
+// OutcomeIndex enum values (matching IMarket.sol): INVALID=0, YES=1, NO=2
+export const OutcomeIndex = { INVALID: 0, YES: 1, NO: 2 } as const;
+
+// PayoffType enum values (matching ConditionalPayment.sol): LINEAR=0, BINARY=1, CUSTOM=2
+export const PayoffType = { LINEAR: 0, BINARY: 1, CUSTOM: 2 } as const;
+
+export const CONDITIONAL_PAYMENT_ABI = [
+  // Write
+  "function createPayment(address beneficiary, address market, bytes32 marketId, address collateral, uint256 amount, uint8 trigger, uint8 payoffType, bytes calldata customPayoff, uint256 expiresAt) external returns (bytes32 paymentId)",
+  "function claimPayment(bytes32 paymentId) external returns (uint256 payout)",
+  "function refundPayment(bytes32 paymentId) external",
+  "function cancelPayment(bytes32 paymentId) external",
+  // Read
+  "function getPayment(bytes32 id) external view returns (tuple(bytes32 id, address creator, address beneficiary, address market, bytes32 marketId, address collateralToken, uint256 totalAmount, uint256 claimedAmount, uint8 triggerOutcome, uint8 payoffType, bytes customPayoff, uint256 expiresAt, bool cancelled))",
+  "function getCreatorPayments(address user) external view returns (bytes32[])",
+];
+
+export const MARKET_RESOLVER_ABI = [
+  "function aiResolve(bytes32 marketId, uint8 outcome, string calldata rationale) external",
+  "function chainlinkResolve(bytes32 marketId) external",
+  "function finalizeResolution(bytes32 marketId) external",
+  "function registeredMarkets(bytes32 marketId) external view returns (address)",
+  "function resolutions(bytes32 marketId) external view returns (uint8 outcome, uint8 source, uint256 timestamp, address resolvedBy, bool finalized)",
+  "function resolutionPrices(bytes32 marketId) external view returns (int256)",
+  "function chainlinkFeeds(bytes32 marketId) external view returns (address)",
+  "function aiOracle() external view returns (address)",
+];
+
 export interface OnChainMarket {
   address: string;
   question: string;
