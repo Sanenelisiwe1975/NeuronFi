@@ -130,7 +130,7 @@ contract ConditionalPayment {
         // Only refund if market is not resolved with the trigger outcome
         bool triggered = (info.state == IMarket.MarketState.RESOLVED &&
                           info.resolution == p.triggerOutcome);
-        require(!triggered, "Market triggered — claim instead");
+        require(!triggered, "Market triggered - claim instead");
 
         uint256 remaining = p.totalAmount - p.claimedAmount;
         p.cancelled = true;

@@ -283,7 +283,6 @@ contract MarketResolver {
     function getDispute(bytes32 marketId) external view returns (Dispute memory) {
         return disputes[marketId];
     }
-─
 
     function _validateProposal(bytes32 marketId) internal view {
         if (registeredMarkets[marketId] == address(0)) revert MarketNotRegistered();
