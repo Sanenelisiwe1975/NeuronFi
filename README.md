@@ -91,12 +91,16 @@ npm run build
 
 ```bash
 cd packages/contracts
-node scripts/deploy-all.mjs          # deploys AgentVault + MarketFactory
-node scripts/set-vault-agent.mjs     # authorises WDK wallet on vault
-node scripts/create-market.mjs       # creates first prediction market
+node scripts/deploy.mjs              # deploys AgentVault + MarketFactory
+node scripts/set-vault-agent.mjs     # authorises WDK wallet on AgentVault
+node scripts/deploy-resolver.mjs     # deploys MarketResolver + first PredictionMarket
+node scripts/deploy-conditional.mjs  # deploys ConditionalPayment + IMarket-compatible market
 ```
 
-Copy the output addresses into `packages/agent/.env` as `AGENT_VAULT_ADDRESS` and `MARKET_FACTORY_ADDRESS`.
+Copy the printed addresses into `packages/agent/.env`:
+- `AGENT_VAULT_ADDRESS`, `MARKET_FACTORY_ADDRESS`
+- `MARKET_RESOLVER_ADDRESS`
+- `CONDITIONAL_PAYMENT_ADDRESS`, `TREASURY_ADDRESS`
 
 ### 7. Run the agent
 
@@ -128,6 +132,9 @@ npm run dev --workspace=apps/web
 | `XAUT_CONTRACT_ADDRESS` | Yes | XAU₮ ERC-20 contract address |
 | `AGENT_VAULT_ADDRESS` | Yes | Deployed AgentVault contract address |
 | `MARKET_FACTORY_ADDRESS` | Yes | Deployed MarketFactory contract address |
+| `MARKET_RESOLVER_ADDRESS` | Yes | Deployed MarketResolver contract address |
+| `CONDITIONAL_PAYMENT_ADDRESS` | Yes | Deployed ConditionalPayment contract address |
+| `TREASURY_ADDRESS` | Yes | Address that receives performance fees on correct predictions |
 | `AGENT_DRY_RUN` | No | `true` = log only, no real txs (default: `true`) |
 | `AGENT_LOOP_INTERVAL_MS` | No | Loop interval in ms (default: `60000`) |
 | `LLM_MODEL` | No | Claude model override (default: `claude-sonnet-4-6`) |
@@ -141,10 +148,12 @@ See `.env.example` for the full list with default values.
 
 | Contract | Address | Purpose |
 |---|---|---|
-| `AgentVault` | `0x824a901E3609C5d8D6F874b31Fe736364190119D` | Holds USD₮; enforces daily withdrawal limit |
+| `AgentVault` | `0x824a901E3609C5d8D6F874b31Fe736364190119D` | Holds USD₮; enforces $1,000/day agent withdrawal limit |
 | `MarketFactory` | `0x3947C99650879990cB2c0C0cbB22FE71e5CF11f9` | Creates and registers PredictionMarket instances |
-| `PredictionMarket` | `0x6A58ee4901670b915Ca085db5A5d6e508d6400e5` | Binary AMM — YES/NO outcome token market |
+| `PredictionMarket` | `0xbfDa4f28C0df0ad6d3c7366667934F9c866483Bd` | Binary AMM — YES/NO outcome token market (IMarket-compatible) |
 | `OutcomeToken` | (deployed by market) | ERC-20 representing a single market outcome |
+| `MarketResolver` | `0x8e50025719b9f605C11Eb43c1683C9536eAdc8B0` | Multi-path resolution: AI oracle, Chainlink, UMA, multisig |
+| `ConditionalPayment` | `0xca2b23094987a1Cc0100A291eD701085464B4aE9` | Outcome-linked USDT escrow — performance fee released only if prediction is correct |
 
 ---
 
