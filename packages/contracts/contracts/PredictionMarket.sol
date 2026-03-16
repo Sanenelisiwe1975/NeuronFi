@@ -38,6 +38,9 @@ contract PredictionMarket is Ownable, ReentrancyGuard {
     /// @notice Resolved outcome (UNRESOLVED until resolution).
     Outcome public resolvedOutcome;
 
+    /// @notice Authorised external resolver (e.g. MarketResolver contract).
+    address public resolver;
+
     /// @notice Timestamp after which no new positions can be entered.
     uint256 public immutable closingTime;
 
@@ -66,6 +69,14 @@ contract PredictionMarket is Ownable, ReentrancyGuard {
     error MarketAlreadyResolved();
     error ZeroAmount();
     error InsufficientOutput(uint256 minOut, uint256 actualOut);
+
+    modifier onlyOwnerOrResolver() {
+        require(
+            msg.sender == owner() || msg.sender == resolver,
+            "PredictionMarket: not owner or resolver"
+        );
+        _;
+    }
 
     constructor(
         string memory question_,
@@ -171,11 +182,19 @@ contract PredictionMarket is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice Resolve the market with its final outcome.
-     * @dev In production, this is called by an oracle or a multisig.
-     *      For the hackathon, the owner (deployer) resolves manually.
+     * @notice Designate an external resolver (e.g. MarketResolver contract).
+     *         Only the owner can set this. Once set, the resolver address can
+     *         also call resolve() — enabling on-chain AI oracle resolution.
      */
-    function resolve(bool yesWon) external onlyOwner {
+    function setResolver(address resolver_) external onlyOwner {
+        resolver = resolver_;
+    }
+
+    /**
+     * @notice Resolve the market with its final outcome.
+     *         Callable by owner (deployer) or the registered resolver contract.
+     */
+    function resolve(bool yesWon) external onlyOwnerOrResolver {
         if (resolvedOutcome != Outcome.UNRESOLVED) revert MarketAlreadyResolved();
         resolvedOutcome = yesWon ? Outcome.YES : Outcome.NO;
         emit MarketResolved(resolvedOutcome);

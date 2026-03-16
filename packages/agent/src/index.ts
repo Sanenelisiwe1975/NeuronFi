@@ -37,6 +37,7 @@ import { reason } from "./reason.js";
 import { decide } from "./decide.js";
 import { execute } from "./execute.js";
 import { learn } from "./learn.js";
+import { resolveMarkets } from "./resolve.js";
 
 interface AgentConfig {
   loopIntervalMs: number;
@@ -92,6 +93,14 @@ async function runCycle(
   const decision = decide(plan, signals);
 
   const executions = await execute(decision, account, config.dryRun, config.rpcUrl);
+
+  // RESOLVE — AI oracle: propose/finalize market resolutions for expired markets
+  const resolutions = await resolveMarkets(config.rpcUrl, config.dryRun);
+  if (resolutions.length > 0) {
+    const proposed   = resolutions.filter((r) => r.action === "proposed").length;
+    const finalized  = resolutions.filter((r) => r.action === "finalized").length;
+    console.log(`[RESOLVE] ${proposed} proposed, ${finalized} finalized this cycle`);
+  }
 
   await learn({
     iteration,

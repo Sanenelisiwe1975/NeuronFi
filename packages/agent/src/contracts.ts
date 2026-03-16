@@ -51,6 +51,17 @@ export const ERC20_ABI = [
   "function balanceOf(address account) external view returns (uint256)",
 ];
 
+export const MARKET_RESOLVER_ABI = [
+  "function aiResolve(bytes32 marketId, uint8 outcome, string calldata rationale) external",
+  "function chainlinkResolve(bytes32 marketId) external",
+  "function finalizeResolution(bytes32 marketId) external",
+  "function registeredMarkets(bytes32 marketId) external view returns (address)",
+  "function resolutions(bytes32 marketId) external view returns (uint8 outcome, uint8 source, uint256 timestamp, address resolvedBy, bool finalized)",
+  "function resolutionPrices(bytes32 marketId) external view returns (int256)",
+  "function chainlinkFeeds(bytes32 marketId) external view returns (address)",
+  "function aiOracle() external view returns (address)",
+];
+
 export interface OnChainMarket {
   address: string;
   question: string;
