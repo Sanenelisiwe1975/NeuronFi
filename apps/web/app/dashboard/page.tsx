@@ -335,8 +335,8 @@ export default function PredictionMarketsPage() {
               Agent {agentRunning ? "active" : "waiting"}
             </span>
           </div>
-          {agentState?.lastCycleMs > 0 && (
-            <span style={{ fontSize: 11, color: "#c4b8b8" }}>{(agentState.lastCycleMs / 1000).toFixed(1)}s/cycle</span>
+          {(agentState?.lastCycleMs ?? 0) > 0 && (
+            <span style={{ fontSize: 11, color: "#c4b8b8" }}>{((agentState?.lastCycleMs ?? 0) / 1000).toFixed(1)}s/cycle</span>
           )}
         </div>
       </header>
