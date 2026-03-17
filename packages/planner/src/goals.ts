@@ -18,7 +18,6 @@
 
 import { z } from "zod";
 
-// ─── Schema ────────────────────────────────────────────────────────────────────
 
 export const GoalSchema = z.object({
   id: z.string(),
@@ -46,7 +45,6 @@ export const GoalSetSchema = z.object({
 
 export type GoalSet = z.infer<typeof GoalSetSchema>;
 
-// ─── Static goal definitions ──────────────────────────────────────────────────
 
 /** The agent's fixed strategic goals. Allocations must sum to 1.0. */
 export const AGENT_GOALS: Omit<Goal, "currentAllocation" | "satisfied">[] = [
@@ -92,7 +90,6 @@ export const AGENT_GOALS: Omit<Goal, "currentAllocation" | "satisfied">[] = [
   },
 ];
 
-// ─── Goal evaluation ──────────────────────────────────────────────────────────
 
 /**
  * Evaluates current goal satisfaction given the portfolio state.

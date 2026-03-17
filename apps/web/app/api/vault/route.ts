@@ -42,8 +42,8 @@ export async function GET() {
   try {
     const { ethers } = await import("ethers");
     const provider = new ethers.JsonRpcProvider(rpcUrl);
-    const vault = new ethers.Contract(vaultAddress, VAULT_ABI, provider) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
-    const usdt = new ethers.Contract(usdtAddress, ERC20_ABI, provider) as any;  // eslint-disable-line @typescript-eslint/no-explicit-any
+    const vault = new ethers.Contract(vaultAddress, VAULT_ABI, provider) as any;
+    const usdt = new ethers.Contract(usdtAddress, ERC20_ABI, provider) as any;
 
     const agentAddress = await getAgentAddressFromRedis();
 

@@ -55,9 +55,7 @@ async function topUpFromVault(rpcUrl: string): Promise<void> {
   try {
     const signer = getEthersSigner(rpcUrl);
     const agentAddress = await signer.getAddress();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const usdt  = new ethers.Contract(usdtAddress, USDT_BALANCE_ABI, signer.provider!) as any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const vault = new ethers.Contract(vaultAddress, VAULT_ABI, signer) as any;
 
     const [agentUsdt, vaultUsdt, remainingDaily]: [bigint, bigint, bigint] = await Promise.all([
@@ -72,8 +70,8 @@ async function topUpFromVault(rpcUrl: string): Promise<void> {
       `Daily remaining: $${(Number(remainingDaily) / 1e6).toFixed(2)}`
     );
 
-    const TOP_UP_THRESHOLD = 50_000_000n; // 50 USDT
-    const TOP_UP_TARGET    = 100_000_000n; // target 100 USDT in wallet
+    const TOP_UP_THRESHOLD = 50_000_000n;
+    const TOP_UP_TARGET    = 100_000_000n;
     if (agentUsdt >= TOP_UP_THRESHOLD) return;
 
     const needed     = TOP_UP_TARGET - agentUsdt;
@@ -103,7 +101,6 @@ async function discoverOpportunities(
   prices: OraclePrices,
   rpcUrl: string
 ): Promise<RawOpportunity[]> {
-  // Try on-chain markets first
   const onChainMarkets = await fetchActiveMarkets(rpcUrl);
 
   if (onChainMarkets.length > 0) {
@@ -113,7 +110,6 @@ async function discoverOpportunities(
       .map((m) => {
         const tvlUsd = Number(m.totalDeposited) / 1e6;
         const blocksUntilClose = Math.max(0, Math.floor((m.closingTime - now) / 12));
-        // Pick YES if it has positive EV, otherwise NO
         const yesEv = m.yesProbability * m.yesPayoutMultiplier - 1;
         const noEv = (1 - m.yesProbability) * m.noPayoutMultiplier - 1;
         const useYes = yesEv >= noEv;
@@ -128,7 +124,6 @@ async function discoverOpportunities(
       });
   }
 
-  // Fallback: simulated opportunities
   const ethPrice = prices.eth.priceUsd;
   return [
     {
@@ -209,14 +204,11 @@ export async function observe(
 ): Promise<ObserveResult> {
   console.log("[OBSERVE] Fetching market signals in parallel…");
 
-  // Ensure agent wallet has enough USDT before planning
   await topUpFromVault(rpcUrl);
 
-  // Fetch prices first (other queries depend on ETH price)
   const prices = await fetchPrices(rpcUrl, network);
-  const ethPriceUsd = prices.eth.priceUsd || 3000; // fallback for gas calc
+  const ethPriceUsd = prices.eth.priceUsd || 3000;
 
-  // Remaining queries run in parallel
   const [gas, portfolio, usdtEthLiquidity, opportunities] = await Promise.all([
     fetchGasSnapshot(rpcUrl, ethPriceUsd),
     getPortfolioSnapshot(account, BigInt(Math.round(prices.xau.priceUsd * 1e6))),

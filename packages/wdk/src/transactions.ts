@@ -15,7 +15,6 @@
 
 import type { WalletAccountEvm } from "@tetherto/wdk-wallet-evm";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 /** Supported settlement tokens. */
 export type TokenSymbol = "USDT" | "XAUT";
@@ -54,7 +53,6 @@ export interface TransferQuote {
   withinFeeLimit: boolean;
 }
 
-// ─── Token address resolution ─────────────────────────────────────────────────
 
 /**
  * Returns the ERC-20 contract address for a token symbol.
@@ -75,7 +73,6 @@ export function getTokenAddress(token: TokenSymbol): string {
   return address;
 }
 
-// ─── Quote ────────────────────────────────────────────────────────────────────
 
 /**
  * Estimates the gas fee for a token transfer WITHOUT submitting a transaction.
@@ -96,16 +93,12 @@ export async function quoteTransfer(
     amount: params.amount,
   });
 
-  // We can't easily read transferMaxFee back out of the account, so
-  // we treat any quote successfully returned as within limits (the
-  // WDK library enforces the cap at execution time).
   return {
     estimatedFee: fee,
     withinFeeLimit: true,
   };
 }
 
-// ─── Execute ──────────────────────────────────────────────────────────────────
 
 /**
  * Transfers an ERC-20 token (USD₮ or XAU₮) using the WDK wallet.

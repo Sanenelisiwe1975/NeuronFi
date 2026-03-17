@@ -99,7 +99,6 @@ export function decide(
   const netEvByActionId: Record<string, number> = {};
 
   for (const action of plan.actions) {
-    // HOLD always passes
     if (action.type === "HOLD") {
       approved.push(action);
       continue;

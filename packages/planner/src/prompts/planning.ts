@@ -13,7 +13,6 @@ import type { GasSnapshot } from "@repo/data";
 import type { LiquiditySnapshot } from "@repo/data";
 import type { GoalSet } from "../goals.js";
 
-// ─── Market opportunity formatting ────────────────────────────────────────────
 
 export interface RawOpportunity {
   marketId: string;

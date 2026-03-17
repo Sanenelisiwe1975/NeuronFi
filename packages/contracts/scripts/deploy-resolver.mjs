@@ -36,7 +36,6 @@ const PRIVATE_KEY     = envVars["DEPLOYER_PRIVATE_KEY"];
 const USDT_ADDRESS    = envVars["USDT_CONTRACT_ADDRESS"] ?? "0x7169D38820dfd117C3FA1f22a697dBA58d90BA06";
 const XAUT_ADDRESS    = envVars["XAUT_CONTRACT_ADDRESS"] ?? "0x68749665FF8D2d112Fa859AA293F07A622782F38";
 
-// WDK wallet — will be authorised as aiOracle on MarketResolver
 const WDK_WALLET = "0xd4f54bB98BA78a813c82C78934191cBba3C33900";
 
 const CHAINLINK_ETH_USD_SEPOLIA = "0x694AA1769357215DE4FAC081bf1f309aDC325306";
@@ -117,14 +116,14 @@ const marketFactory = new ethers.ContractFactory(
 
 const QUESTION    = "Will ETH price be above $2,500 within 14 days?";
 const closingTime = Math.floor(Date.now() / 1000) + 14 * 24 * 60 * 60;
-const FEE_BPS     = 50n; // 0.5%
+const FEE_BPS     = 50n;
 
 const market = await marketFactory.deploy(
   QUESTION,
   USDT_ADDRESS,
   closingTime,
-  0n,            // initialYesUsdt — seeded by agent on first trade
-  0n,            // initialNoUsdt
+  0n,
+  0n,
   FEE_BPS,
   deployer.address
 );

@@ -21,7 +21,6 @@
 import { ethers } from "ethers";
 import { getEthersSigner, fetchActiveMarkets } from "./contracts.js";
 
-// ─── MarketResolver ABI (subset used by agent) ───────────────────────────────
 
 export const MARKET_RESOLVER_ABI = [
   "function aiResolve(bytes32 marketId, uint8 outcome, string calldata rationale) external",
@@ -34,16 +33,13 @@ export const MARKET_RESOLVER_ABI = [
   "function aiOracle() external view returns (address)",
 ];
 
-// OutcomeIndex enum: INVALID=0, YES=1, NO=2
 const OutcomeIndex = { INVALID: 0, YES: 1, NO: 2 } as const;
 
-// Chainlink AggregatorV3 minimal ABI
 const CHAINLINK_ABI = [
   "function latestRoundData() external view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)",
   "function decimals() external view returns (uint8)",
 ];
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /**
  * Parses a dollar threshold from a market question string.
@@ -51,7 +47,6 @@ const CHAINLINK_ABI = [
  * Returns null if no threshold found.
  */
 function parseThresholdFromQuestion(question: string): number | null {
-  // Match $2,500 or $2500 or $2.5k patterns
   const match = question.match(/\$([0-9,]+(?:\.[0-9]+)?)/);
   if (!match) return null;
   const raw = match[1]!.replace(/,/g, "");
@@ -67,7 +62,6 @@ async function fetchChainlinkPrice(
   feedAddress: string,
   provider: ethers.Provider
 ): Promise<number> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const feed = new ethers.Contract(feedAddress, CHAINLINK_ABI, provider) as any;
   const [, answer] = await feed.latestRoundData();
   const decimals: number = await feed.decimals();
@@ -83,7 +77,6 @@ function marketIdFromAddress(address: string): string {
   return ethers.zeroPadValue(address, 32);
 }
 
-// ─── Resolution struct from on-chain ─────────────────────────────────────────
 
 interface OnChainResolution {
   outcome: number;
@@ -93,7 +86,6 @@ interface OnChainResolution {
   finalized: boolean;
 }
 
-// ─── Main export ─────────────────────────────────────────────────────────────
 
 export interface ResolveResult {
   marketAddress: string;
@@ -117,15 +109,12 @@ export async function resolveMarkets(
 ): Promise<ResolveResult[]> {
   const resolverAddress = process.env["MARKET_RESOLVER_ADDRESS"];
   if (!resolverAddress) {
-    // No resolver configured — skip silently
     return [];
   }
 
   const signer = getEthersSigner(rpcUrl);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const resolver = new ethers.Contract(resolverAddress, MARKET_RESOLVER_ABI, signer) as any;
 
-  // Confirm the agent wallet is the registered aiOracle
   const registeredOracle: string = await resolver.aiOracle();
   const agentAddress = await signer.getAddress();
   if (registeredOracle.toLowerCase() !== agentAddress.toLowerCase()) {
@@ -143,23 +132,18 @@ export async function resolveMarkets(
   for (const market of markets) {
     const marketId = marketIdFromAddress(market.address);
 
-    // Is this market registered with our resolver?
     const registered: string = await resolver.registeredMarkets(marketId);
     if (registered === ethers.ZeroAddress) {
-      // Market not registered with this resolver — skip
       continue;
     }
 
-    // Fetch current resolution state
     const res: OnChainResolution = await resolver.resolutions(marketId);
 
-    // ── Case 1: Already finalized — nothing to do ──────────────────────────
     if (res.finalized) continue;
 
-    // ── Case 2: Resolution proposed and past dispute window → finalize ─────
     if (res.timestamp > 0n) {
-      const DISPUTE_WINDOW_AI = 24 * 3600; // 24h for AI oracle
-      const DISPUTE_WINDOW    = 48 * 3600; // 48h for others
+      const DISPUTE_WINDOW_AI = 24 * 3600;
+      const DISPUTE_WINDOW    = 48 * 3600;
       const window = res.source === 3 /* AI_ORACLE */ ? DISPUTE_WINDOW_AI : DISPUTE_WINDOW;
       const canFinalize = now >= Number(res.timestamp) + window;
 
@@ -183,20 +167,16 @@ export async function resolveMarkets(
         continue;
       }
 
-      // Resolution pending but dispute window not elapsed — wait
       const waitHours = ((Number(res.timestamp) + window - now) / 3600).toFixed(1);
       console.log(`[RESOLVE] Market ${market.address.slice(0,10)}… — resolution pending, finalize in ~${waitHours}h`);
       results.push({ marketAddress: market.address, marketId, action: "skipped" });
       continue;
     }
 
-    // ── Case 3: Market past closing time, no resolution yet → propose ──────
     if (now < market.closingTime) {
-      // Market still open — skip
       continue;
     }
 
-    // Market is expired. Determine outcome from Chainlink price.
     console.log(`[RESOLVE] Market expired: "${market.question}"`);
 
     const threshold = parseThresholdFromQuestion(market.question);
@@ -206,7 +186,6 @@ export async function resolveMarkets(
       continue;
     }
 
-    // Get Chainlink feed configured for this market (if any)
     const feedAddress: string = await resolver.chainlinkFeeds(marketId);
     const chainlinkEthUsdSepolia = "0x694AA1769357215DE4FAC081bf1f309aDC325306";
     const activeFeed = feedAddress !== ethers.ZeroAddress ? feedAddress : chainlinkEthUsdSepolia;
@@ -220,13 +199,12 @@ export async function resolveMarkets(
       continue;
     }
 
-    // Determine YES/NO: question asks "above $X" → YES if price >= threshold
     const isYes =
       market.question.toLowerCase().includes("above") ||
       market.question.toLowerCase().includes("over") ||
       market.question.toLowerCase().includes("exceed")
         ? currentPrice >= threshold
-        : currentPrice < threshold; // "below" questions
+        : currentPrice < threshold;
 
     const outcome = isYes ? OutcomeIndex.YES : OutcomeIndex.NO;
     const outcomeLabel: "YES" | "NO" = isYes ? "YES" : "NO";

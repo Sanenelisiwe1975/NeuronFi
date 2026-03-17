@@ -51,19 +51,15 @@ export const ERC20_ABI = [
   "function balanceOf(address account) external view returns (uint256)",
 ];
 
-// OutcomeIndex enum values (matching IMarket.sol): INVALID=0, YES=1, NO=2
 export const OutcomeIndex = { INVALID: 0, YES: 1, NO: 2 } as const;
 
-// PayoffType enum values (matching ConditionalPayment.sol): LINEAR=0, BINARY=1, CUSTOM=2
 export const PayoffType = { LINEAR: 0, BINARY: 1, CUSTOM: 2 } as const;
 
 export const CONDITIONAL_PAYMENT_ABI = [
-  // Write
   "function createPayment(address beneficiary, address market, bytes32 marketId, address collateral, uint256 amount, uint8 trigger, uint8 payoffType, bytes calldata customPayoff, uint256 expiresAt) external returns (bytes32 paymentId)",
   "function claimPayment(bytes32 paymentId) external returns (uint256 payout)",
   "function refundPayment(bytes32 paymentId) external",
   "function cancelPayment(bytes32 paymentId) external",
-  // Read
   "function getPayment(bytes32 id) external view returns (tuple(bytes32 id, address creator, address beneficiary, address market, bytes32 marketId, address collateralToken, uint256 totalAmount, uint256 claimedAmount, uint8 triggerOutcome, uint8 payoffType, bytes customPayoff, uint256 expiresAt, bool cancelled))",
   "function getCreatorPayments(address user) external view returns (bytes32[])",
 ];
@@ -111,7 +107,6 @@ export async function fetchActiveMarkets(
 
   try {
     const provider = new ethers.JsonRpcProvider(rpcUrl);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const factory = new ethers.Contract(factoryAddress, MARKET_FACTORY_ABI, provider) as any;
     const addresses: string[] = await factory.getActiveMarkets();
     console.log(`[contracts] MarketFactory has ${addresses.length} active market(s)`);
@@ -121,7 +116,6 @@ export async function fetchActiveMarkets(
 
     return Promise.all(
       addresses.map(async (addr): Promise<OnChainMarket> => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const market = new ethers.Contract(addr, PREDICTION_MARKET_ABI, provider) as any;
 
         const [
@@ -152,7 +146,6 @@ export async function fetchActiveMarkets(
         const noProbability = 1 - yesProbability;
         const feeMultiplier = 1 - Number(feeBps) / 10_000;
 
-        // Payout = 1/probability adjusted for fee
         const yesPayoutMultiplier = yesProbability > 0
           ? feeMultiplier / yesProbability
           : 0;

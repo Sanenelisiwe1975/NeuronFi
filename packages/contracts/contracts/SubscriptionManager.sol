@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import "./IERC20Extended.sol";
@@ -53,7 +52,6 @@ contract SubscriptionManager {
         treasury        = _treasury;
         collateralToken = _collateralToken;
 
-        // Default plan configurations
         plans[Plan.FREE] = PlanConfig({
             pricePerPeriod: 0,
             period:         30 days,
@@ -61,19 +59,19 @@ contract SubscriptionManager {
             active:         true
         });
         plans[Plan.BASIC] = PlanConfig({
-            pricePerPeriod: 29e6,      // $29 / month
+            pricePerPeriod: 29e6,
             period:         30 days,
             gracePeriod:    3 days,
             active:         true
         });
         plans[Plan.PRO] = PlanConfig({
-            pricePerPeriod: 99e6,      // $99 / month
+            pricePerPeriod: 99e6,
             period:         30 days,
             gracePeriod:    5 days,
             active:         true
         });
         plans[Plan.INSTITUTIONAL] = PlanConfig({
-            pricePerPeriod: 499e6,     // $499 / month
+            pricePerPeriod: 499e6,
             period:         30 days,
             gracePeriod:    7 days,
             active:         true

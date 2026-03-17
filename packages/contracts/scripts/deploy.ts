@@ -29,11 +29,11 @@ async function main() {
     "0x68749665FF8D2d112Fa859AA293F07A622782F38";
 
   const AGENT_ADDRESS =
-    process.env["AGENT_ADDRESS"] ?? deployer.address; // Replace with real agent WDK address
+    process.env["AGENT_ADDRESS"] ?? deployer.address;
 
   console.log("\n[1/2] Deploying AgentVault…");
   const AgentVault = await ethers.getContractFactory("AgentVault");
-  const DAILY_LIMIT = ethers.parseUnits("1000", 6); // $1,000 USDT per day
+  const DAILY_LIMIT = ethers.parseUnits("1000", 6);
 
   const vault = await AgentVault.deploy(
     USDT_ADDRESS,
@@ -48,7 +48,7 @@ async function main() {
 
   console.log("\n[2/2] Deploying MarketFactory…");
   const MarketFactory = await ethers.getContractFactory("MarketFactory");
-  const DEFAULT_FEE_BPS = 50; // 0.5%
+  const DEFAULT_FEE_BPS = 50;
 
   const factory = await MarketFactory.deploy(
     USDT_ADDRESS,

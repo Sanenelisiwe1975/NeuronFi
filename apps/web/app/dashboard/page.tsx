@@ -4,12 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { TradeTable } from "../../components/TradeTable";
 import { PortfolioChart } from "../../components/PortfolioChart";
 
-// ── Palette ────────────────────────────────────────────────────────────────────
-// Rose:    #fdf0f0 / #f5d0d0 / #e8a8a8 / #c97070
-// Sage:    #f0f5f0 / #cde0cd / #9ec89e / #5f9a5f
-// Lavender:#f3f0fb / #ddd5f5 / #b9a8e8 / #7b62c9
-
-// ── API Types ──────────────────────────────────────────────────────────────────
 
 interface AgentState {
   iteration: number;
@@ -76,7 +70,6 @@ interface Trade {
   executedAt: string;
 }
 
-// ── Static Market (fallback) ───────────────────────────────────────────────────
 
 interface Market {
   id: number | string;
@@ -118,7 +111,6 @@ function liveToMarket(m: LiveMarket, i: number): Market {
   return { id: m.address, title: m.question, category: "Crypto", yesProb, volume, closes, trend, hot: i < 2, address: m.address };
 }
 
-// ── Tiny sparkline SVG ─────────────────────────────────────────────────────────
 function Spark({ data, color }: { data: number[]; color: string }) {
   const w = 64, h = 28;
   const min = Math.min(...data), max = Math.max(...data);
@@ -134,7 +126,6 @@ function Spark({ data, color }: { data: number[]; color: string }) {
   );
 }
 
-// ── Probability bar ────────────────────────────────────────────────────────────
 function ProbBar({ yes }: { yes: number }) {
   const no = 100 - yes;
   return (
@@ -151,7 +142,6 @@ function ProbBar({ yes }: { yes: number }) {
   );
 }
 
-// ── Market Card ────────────────────────────────────────────────────────────────
 function MarketCard({ market, onClick }: { market: Market; onClick: () => void }) {
   const cat = CATEGORY_COLOR[market.category] ?? { bg: "#f5f5f5", text: "#888888", border: "#e0e0e0" };
   const trendUp = (market.trend[market.trend.length - 1] ?? 0) >= (market.trend[0] ?? 0);
@@ -179,7 +169,6 @@ function MarketCard({ market, onClick }: { market: Market; onClick: () => void }
   );
 }
 
-// ── Sentiment badge ────────────────────────────────────────────────────────────
 function SentimentBadge({ sentiment }: { sentiment: string }) {
   const cfg: Record<string, { bg: string; text: string; border: string }> = {
     BULLISH:   { bg: "#f0f5f0", text: "#5f9a5f", border: "#cde0cd" },
@@ -195,7 +184,6 @@ function SentimentBadge({ sentiment }: { sentiment: string }) {
   );
 }
 
-// ── Resolution Row ─────────────────────────────────────────────────────────────
 function ResolutionRow({ r }: { r: Resolution }) {
   const now = Date.now();
   const disputeEnd = r.disputeWindowEnds ? new Date(r.disputeWindowEnds).getTime() : null;
@@ -224,13 +212,11 @@ function ResolutionRow({ r }: { r: Resolution }) {
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function PredictionMarketsPage() {
   const [activeTab, setActiveTab] = useState<"markets" | "portfolio" | "agent">("markets");
   const [filter, setFilter] = useState<string>("All");
   const [selected, setSelected] = useState<Market | null>(null);
 
-  // Live data state
   const [agentState, setAgentState]           = useState<AgentState | null>(null);
   const [liveMarkets, setLiveMarkets]         = useState<LiveMarket[]>([]);
   const [vaultState, setVaultState]           = useState<VaultState | null>(null);
@@ -246,7 +232,6 @@ export default function PredictionMarketsPage() {
   const fetchTrades   = useCallback(() => fetch("/api/trades").then(r => r.json()).then((d: { trades: Trade[] }) => setTrades(d.trades ?? [])).catch(() => {}), []);
 
   useEffect(() => {
-    // Initial fetch
     void fetchAgent(); void fetchMarkets(); void fetchVault();
     void fetchRes();   void fetchPortfolio(); void fetchTrades();
 
@@ -261,7 +246,6 @@ export default function PredictionMarketsPage() {
     };
   }, [fetchAgent, fetchMarkets, fetchVault, fetchRes, fetchPortfolio, fetchTrades]);
 
-  // Derive display markets
   const markets: Market[] = liveMarkets.length > 0
     ? liveMarkets.map((m, i) => liveToMarket(m, i))
     : MOCK_MARKETS;
@@ -271,7 +255,6 @@ export default function PredictionMarketsPage() {
 
   const agentRunning = agentState?.status === "RUNNING";
 
-  // Portfolio values from latest snapshot
   const latestSnap  = snapshots[snapshots.length - 1];
   const portfolioVal = latestSnap ? `$${Number(latestSnap.totalUsdt).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—";
   const usdtBal     = latestSnap ? `$${Number(latestSnap.usdtBalance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD₮` : "—";

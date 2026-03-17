@@ -94,7 +94,6 @@ async function runCycle(
 
   const executions = await execute(decision, account, config.dryRun, config.rpcUrl);
 
-  // RESOLVE — AI oracle: propose/finalize market resolutions for expired markets
   const resolutions = await resolveMarkets(config.rpcUrl, config.dryRun);
   if (resolutions.length > 0) {
     const proposed   = resolutions.filter((r) => r.action === "proposed").length;
@@ -153,7 +152,6 @@ async function main(): Promise<void> {
         `[AGENT] Unhandled error in cycle #${iteration}:`,
         err instanceof Error ? err.stack : err
       );
-      // Continue — transient RPC / network errors must not kill the agent
     }
 
     if (

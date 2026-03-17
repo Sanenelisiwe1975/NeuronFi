@@ -14,7 +14,6 @@
  * @license Apache-2.0
  */
 
-// Wallet creation & lifecycle
 export {
   AgentWallet,
   createAgentWallet,
@@ -22,7 +21,6 @@ export {
   type AccountInfo,
 } from "./wallet.js";
 
-// Token transfers
 export {
   transferToken,
   transferUSDT,
@@ -35,7 +33,6 @@ export {
   type TransferQuote,
 } from "./transactions.js";
 
-// USDT0 cross-chain bridge (LayerZero OFT)
 export {
   bridgeUsdt0,
   quoteBridgeUsdt0,
@@ -45,7 +42,6 @@ export {
   type BridgeQuote,
 } from "./bridge.js";
 
-// Account abstraction & portfolio snapshots
 export {
   getEthBalance,
   getUsdtBalance,

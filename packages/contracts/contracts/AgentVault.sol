@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -25,24 +24,17 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 contract AgentVault is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    // State
 
-    /// @notice Authorised agent address (WDK wallet).
     address public agent;
 
-    /// @notice USDT token contract.
     IERC20 public immutable usdt;
 
-    /// @notice XAU₮ token contract.
     IERC20 public immutable xaut;
 
-    /// @notice Maximum USDT the agent can withdraw per 24h window (6 decimals).
     uint256 public dailyLimitUsdt;
 
-    /// @notice USDT withdrawn in the current 24h window.
     uint256 public withdrawnToday;
 
-    /// @notice Timestamp when the current 24h window started.
     uint256 public windowStart;
 
     event AgentWithdraw(address indexed token, uint256 amount, address indexed to);
@@ -145,17 +137,14 @@ contract AgentVault is Ownable, ReentrancyGuard {
         dailyLimitUsdt = newLimit;
     }
 
-    /// @notice USDT balance held in the vault.
     function usdtBalance() external view returns (uint256) {
         return usdt.balanceOf(address(this));
     }
 
-    /// @notice XAU₮ balance held in the vault.
     function xautBalance() external view returns (uint256) {
         return xaut.balanceOf(address(this));
     }
 
-    /// @notice Remaining USDT the agent can withdraw today.
     function remainingDailyUsdt() external view returns (uint256) {
         if (block.timestamp >= windowStart + 1 days) return dailyLimitUsdt;
         return dailyLimitUsdt > withdrawnToday ? dailyLimitUsdt - withdrawnToday : 0;

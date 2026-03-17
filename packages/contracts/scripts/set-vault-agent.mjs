@@ -22,7 +22,6 @@ const envVars = Object.fromEntries(
 const RPC_URL       = envVars["RPC_URL"];
 const PRIVATE_KEY   = envVars["DEPLOYER_PRIVATE_KEY"];
 const VAULT_ADDRESS = envVars["AGENT_VAULT_ADDRESS"];
-// WDK wallet — agent that will be authorised to withdraw
 const WDK_WALLET    = "0xd4f54bB98BA78a813c82C78934191cBba3C33900";
 
 const VAULT_ABI = [

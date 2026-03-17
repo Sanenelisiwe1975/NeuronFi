@@ -35,8 +35,8 @@ async function main() {
 
   const closingTime = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60;
 
-  const SEED_YES = ethers.parseUnits("50", 6);  // 50 USDT
-  const SEED_NO  = ethers.parseUnits("50", 6);  // 50 USDT
+  const SEED_YES = ethers.parseUnits("50", 6);
+  const SEED_NO  = ethers.parseUnits("50", 6);
   const SEED_TOTAL = SEED_YES + SEED_NO;
 
   const usdt = new ethers.Contract(USDT_ADDRESS, ERC20_ABI, deployer);
