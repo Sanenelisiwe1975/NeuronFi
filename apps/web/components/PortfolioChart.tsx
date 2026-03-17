@@ -26,7 +26,7 @@ function CustomTooltip({ active, payload, label }: {
   label?: string;
 }) {
   if (!active || !payload?.length) return null;
-  const val = payload[0].value;
+  const val = payload[0]?.value ?? 0;
 
   return (
     <div style={{
