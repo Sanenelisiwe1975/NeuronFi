@@ -27,7 +27,7 @@ export async function GET() {
   try {
     const { ethers } = await import("ethers");
     const provider = new ethers.JsonRpcProvider(rpcUrl);
-    const factory  = new ethers.Contract(factoryAddress, FACTORY_ABI, provider) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const factory  = new ethers.Contract(factoryAddress, FACTORY_ABI, provider) as any;
     const resolver = new ethers.Contract(resolverAddress, RESOLVER_ABI, provider) as any;
 
     const addresses: string[] = await factory.getActiveMarkets();

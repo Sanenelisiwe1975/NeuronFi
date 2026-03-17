@@ -1,11 +1,9 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./iMarket.sol";
 
 
- 
 contract ConditionalPayment {
 
     enum PayoffType { LINEAR, BINARY, CUSTOM }
@@ -19,10 +17,10 @@ contract ConditionalPayment {
         address              collateralToken;
         uint256              totalAmount;
         uint256              claimedAmount;
-        IMarket.OutcomeIndex triggerOutcome;  // Outcome that releases funds
+        IMarket.OutcomeIndex triggerOutcome;
         PayoffType           payoffType;
-        bytes                customPayoff;    // ABI-encoded custom curve params
-        uint256              expiresAt;       // Refund if market unresolved by this time
+        bytes                customPayoff;
+        uint256              expiresAt;
         bool                 cancelled;
     }
 
@@ -127,7 +125,6 @@ contract ConditionalPayment {
         if (block.timestamp < p.expiresAt)    revert NotExpired();
 
         IMarket.MarketInfo memory info = IMarket(p.market).getMarketInfo();
-        // Only refund if market is not resolved with the trigger outcome
         bool triggered = (info.state == IMarket.MarketState.RESOLVED &&
                           info.resolution == p.triggerOutcome);
         require(!triggered, "Market triggered - claim instead");
@@ -155,7 +152,6 @@ contract ConditionalPayment {
     }
 
     
-
     function getPayment(bytes32 id) external view returns (Payment memory) {
         return payments[id];
     }
@@ -176,7 +172,6 @@ contract ConditionalPayment {
             return p.totalAmount - p.claimedAmount;
         }
         if (p.payoffType == PayoffType.LINEAR) {
-            // Pro-rata based on beneficiary's share of winning outcome tokens
             address winToken = (info.resolution == IMarket.OutcomeIndex.YES)
                 ? info.yesToken : info.noToken;
             uint256 totalWinShares = IERC20(winToken).totalSupply();

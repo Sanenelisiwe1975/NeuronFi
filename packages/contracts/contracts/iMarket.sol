@@ -1,11 +1,10 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 
 interface IMarket {
     
     enum MarketState { OPEN, CLOSED, RESOLVED, DISPUTED, CANCELLED }
-    enum OutcomeIndex { INVALID, YES, NO }          // 0 = unset / invalid
+    enum OutcomeIndex { INVALID, YES, NO }
 
 
     struct MarketInfo {
@@ -16,18 +15,18 @@ interface IMarket {
         uint64    resolvesAt;
         MarketState state;
         OutcomeIndex resolution;
-        address   collateralToken;   // USD₮ or XAU₮
+        address   collateralToken;
         address   yesToken;
         address   noToken;
         uint256   totalLiquidity;
-        uint256   feeBps;            // Platform fee in basis points
+        uint256   feeBps;
     }
 
     struct Position {
         uint256 yesShares;
         uint256 noShares;
-        uint256 lpShares;            // AMM liquidity-provider shares
-        uint256 avgEntryPrice;       // Weighted avg in 1e18 scale
+        uint256 lpShares;
+        uint256 avgEntryPrice;
     }
 
 
@@ -41,12 +40,10 @@ interface IMarket {
 
     function getMarketInfo() external view returns (MarketInfo memory);
     function getPosition(address account) external view returns (Position memory);
-    function getPrice(OutcomeIndex outcome) external view returns (uint256 price18);   // 1e18 = $1
+    function getPrice(OutcomeIndex outcome) external view returns (uint256 price18);
     function getExpectedShares(OutcomeIndex outcome, uint256 collateralIn) external view returns (uint256 shares);
     function getExpectedCollateral(OutcomeIndex outcome, uint256 sharesIn) external view returns (uint256 collateral);
     function getLiquidity() external view returns (uint256 yes, uint256 no, uint256 total);
-
-    
 
     
     function buy(OutcomeIndex outcome, uint256 collateralIn, uint256 minSharesOut)

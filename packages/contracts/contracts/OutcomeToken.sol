@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -13,7 +12,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @dev Only the parent PredictionMarket contract (owner) can mint/burn.
  */
 contract OutcomeToken is ERC20, Ownable {
-    /// @notice Human-readable label for this outcome ("YES" or "NO").
     string public outcomeLabel;
 
     constructor(

@@ -28,7 +28,7 @@ export async function GET() {
   try {
     const { ethers } = await import("ethers");
     const provider = new ethers.JsonRpcProvider(rpcUrl);
-    const factory = new ethers.Contract(factoryAddress, FACTORY_ABI, provider) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const factory = new ethers.Contract(factoryAddress, FACTORY_ABI, provider) as any;
     const addresses: string[] = await factory.getActiveMarkets();
 
     const now = Math.floor(Date.now() / 1000);
@@ -36,7 +36,7 @@ export async function GET() {
     const markets = await Promise.all(
       addresses.map(async (addr) => {
         try {
-          const m = new ethers.Contract(addr, MARKET_ABI, provider) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+          const m = new ethers.Contract(addr, MARKET_ABI, provider) as any;
           const [question, closingTime, totalDeposited, resolvedOutcome, impliedYesProb] =
             await Promise.all([
               m.question() as Promise<string>,

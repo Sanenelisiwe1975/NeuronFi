@@ -27,9 +27,7 @@ async function fetchPredictionPositions(rpcUrl: string, agentAddress: string): P
     let total = 0n;
 
     for (const market of markets) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const yesToken = new ethers.Contract(market.yesTokenAddress, ERC20_ABI, provider) as any;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const noToken = new ethers.Contract(market.noTokenAddress, ERC20_ABI, provider) as any;
       const [yesBal, noBal]: [bigint, bigint] = await Promise.all([
         yesToken.balanceOf(agentAddress),

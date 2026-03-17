@@ -30,7 +30,6 @@ import {
   type RawOpportunity,
 } from "./prompts/planning.js";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface PlannerInput {
   prices: OraclePrices;
@@ -58,7 +57,6 @@ export interface PlannerConfig {
   mock?: boolean;
 }
 
-// ─── OpenClaw planner ─────────────────────────────────────────────────────────
 
 /**
  * The OpenClaw planner uses LangChain.js to call GPT-4o with structured
@@ -110,7 +108,6 @@ export class OpenClawPlanner {
 
     let rawJson: string;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response = await this.llm.invoke(messages as any);
       rawJson = typeof response.content === "string"
         ? response.content
@@ -123,14 +120,12 @@ export class OpenClawPlanner {
     return this.parseAndValidate(rawJson, input);
   }
 
-  // ── Private helpers ──────────────────────────────────────────────────────
 
   private evaluateGoals(input: PlannerInput): GoalSet {
     const total = Number(input.portfolio.usdtMicro) / 1e6;
     const prediction = Number(input.portfolio.predictionPositionsMicro) / 1e6;
     const yieldVal = Number(input.portfolio.yieldPositionsMicro) / 1e6;
     const lp = Number(input.portfolio.lpPositionsMicro) / 1e6;
-    // XAU₮ converted to USD at current price
     const xautUsd =
       (Number(input.portfolio.xautMicro) / 1e6) * input.prices.xau.priceUsd;
 
@@ -139,10 +134,8 @@ export class OpenClawPlanner {
 
   private parseAndValidate(rawJson: string, input: PlannerInput): ActionPlan {
     try {
-      // Strip markdown code fences if Claude wraps the response
       const cleaned = rawJson.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/,"").trim();
       const parsed: unknown = JSON.parse(cleaned);
-      // Ensure actions have IDs and required fields
       if (
         parsed !== null &&
         typeof parsed === "object" &&
@@ -186,7 +179,7 @@ export class OpenClawPlanner {
         marketId: bestOpp.marketId,
         marketDescription: bestOpp.description,
         outcome: "YES" as const,
-        amountMicroUsdt: 10_000_000n, // $10 position
+        amountMicroUsdt: 10_000_000n,
         probability: bestOpp.probability,
         payoutMultiplier: bestOpp.payoutMultiplier,
         rationale: `Positive EV of ${(ev * 100).toFixed(1)}% detected. Entering minimum position.`,
@@ -219,7 +212,6 @@ export class OpenClawPlanner {
   }
 }
 
-// ─── Singleton factory ─────────────────────────────────────────────────────────
 
 let _planner: OpenClawPlanner | null = null;
 

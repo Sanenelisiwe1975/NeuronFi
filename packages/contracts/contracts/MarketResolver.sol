@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import "./iMarket.sol";
@@ -41,7 +40,7 @@ contract MarketResolver {
     }
 
     uint256 public constant DISPUTE_PERIOD   = 48 hours;
-    uint256 public constant DISPUTE_BOND     = 1000e6;   // 1 000 USD₮ (6 dec)
+    uint256 public constant DISPUTE_BOND     = 1000e6;
     uint256 public constant COMMITTEE_SIZE   = 5;
     uint256 public constant COMMITTEE_QUORUM = 3;
 
@@ -62,7 +61,7 @@ contract MarketResolver {
     mapping(bytes32 => mapping(address => IMarket.OutcomeIndex)) public committeeVotes;
     mapping(bytes32 => uint256) public voteCount;
 
-    mapping(bytes32 => address) public registeredMarkets; // marketId → PredictionMarket
+    mapping(bytes32 => address) public registeredMarkets;
 
     event MarketRegistered(bytes32 indexed marketId, address market);
     event ResolutionProposed(bytes32 indexed marketId, IMarket.OutcomeIndex outcome, ResolutionSource source, string rationale);
@@ -201,8 +200,8 @@ contract MarketResolver {
         if (dis.state == DisputeState.PENDING) revert DisputePeriodActive();
 
         uint256 window = (res.source == ResolutionSource.AI_ORACLE)
-            ? DISPUTE_PERIOD / 2   // 24 h for AI oracle
-            : DISPUTE_PERIOD;      // 48 h for multisig / Chainlink
+            ? DISPUTE_PERIOD / 2
+            : DISPUTE_PERIOD;
 
         require(block.timestamp >= res.timestamp + window, "Dispute period still active");
 
@@ -211,7 +210,6 @@ contract MarketResolver {
         address marketAddr = registeredMarkets[marketId];
         require(marketAddr != address(0), "Market not registered");
 
-        // Map IMarket.OutcomeIndex → bool for PredictionMarket.resolve(bool yesWon)
         bool yesWon = (res.outcome == IMarket.OutcomeIndex.YES);
         PredictionMarket(marketAddr).resolve(yesWon);
 

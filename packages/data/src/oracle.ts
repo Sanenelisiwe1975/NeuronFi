@@ -15,7 +15,6 @@
 
 import { ethers } from "ethers";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface PriceData {
   /** Asset symbol (ETH, USDT, XAU). */
@@ -35,14 +34,12 @@ export interface OraclePrices {
   fetchedAt: number;
 }
 
-// ─── Chainlink AggregatorV3 ABI (minimal) ─────────────────────────────────────
 
 const AGGREGATOR_ABI = [
   "function latestRoundData() external view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)",
   "function decimals() external view returns (uint8)",
 ];
 
-// ─── Feed addresses ───────────────────────────────────────────────────────────
 
 /**
  * Chainlink price feed addresses by network.
@@ -55,14 +52,12 @@ const FEEDS: Record<string, Record<"eth" | "usdt" | "xau", string>> = {
     xau:  "0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6",
   },
   sepolia: {
-    // Chainlink has limited Sepolia feeds; using Ethereum Sepolia testnet feeds
     eth:  "0x694AA1769357215DE4FAC081bf1f309aDC325306",
     usdt: "0x14866185B1962B63C3Ea9E03Bc1da838bab34C19",
     xau:  "0x7b219F57a8e9C7303204Af681e9fA69d17ef626f",
   },
 };
 
-// ─── CoinGecko fallback ───────────────────────────────────────────────────────
 
 const COINGECKO_URL =
   "https://api.coingecko.com/api/v3/simple/price?ids=ethereum,tether,tether-gold&vs_currencies=usd";
@@ -109,14 +104,12 @@ async function fetchCoinGeckoPrices(): Promise<OraclePrices> {
   };
 }
 
-// ─── Chainlink on-chain fetch ──────────────────────────────────────────────────
 
 async function fetchChainlinkPrice(
   provider: ethers.JsonRpcProvider,
   feedAddress: string,
   symbol: string
 ): Promise<PriceData> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const feed = new ethers.Contract(feedAddress, AGGREGATOR_ABI, provider) as any;
   const decimals = (await feed.decimals()) as number;
   const roundData = (await feed.latestRoundData()) as [bigint, bigint, bigint, bigint, bigint];
@@ -133,7 +126,6 @@ async function fetchChainlinkPrice(
   };
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
  * Fetches current prices for ETH, USDT, and XAU.

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -26,38 +25,27 @@ contract PredictionMarket is Ownable, ReentrancyGuard {
 
     enum Outcome { UNRESOLVED, YES, NO }
 
-    /// @notice Human-readable question this market resolves.
     string public question;
 
-    /// @notice USDT token used for settlement.
     IERC20 public immutable usdt;
 
-    /// @notice YES and NO outcome tokens.
     OutcomeToken public immutable yesToken;
     OutcomeToken public immutable noToken;
 
-    /// @notice Resolved outcome (UNRESOLVED until resolution).
     Outcome public resolvedOutcome;
 
-    /// @notice Authorised external resolver (e.g. MarketResolver contract).
     address public resolver;
 
-    /// @notice Timestamp after which no new positions can be entered.
     uint256 public immutable closingTime;
 
-    /// @notice Protocol fee in basis points (default: 50 = 0.5%).
     uint256 public feeBps;
 
-    /// @notice Accumulated protocol fees (claimable by owner).
     uint256 public accruedFees;
 
-    /// @notice Total USDT deposited (both sides).
     uint256 public totalDeposited;
 
-    /// @notice YES-side USDT reserves (for AMM pricing).
     uint256 public yesReserve;
 
-    /// @notice NO-side USDT reserves (for AMM pricing).
     uint256 public noReserve;
 
     event PositionEntered(address indexed trader, bool isYes, uint256 usdtIn, uint256 tokensOut);
@@ -134,17 +122,13 @@ contract PredictionMarket is Ownable, ReentrancyGuard {
         if (resolvedOutcome != Outcome.UNRESOLVED) revert MarketAlreadyResolved();
         if (usdtIn == 0) revert ZeroAmount();
 
-        // Deduct protocol fee
         uint256 fee = (usdtIn * feeBps) / 10_000;
         uint256 netIn = usdtIn - fee;
         accruedFees += fee;
 
-        // Transfer USDT in
         usdt.safeTransferFrom(msg.sender, address(this), usdtIn);
         totalDeposited += usdtIn;
 
-        // AMM pricing: tokens out = netIn * oppositeReserve / (ownReserve + netIn)
-        // Ensures price reflects current probability
         if (isYes) {
             tokensOut = (netIn * noReserve) / (yesReserve + netIn);
             yesReserve += netIn;
@@ -172,7 +156,6 @@ contract PredictionMarket is Ownable, ReentrancyGuard {
         OutcomeToken winningToken = resolvedOutcome == Outcome.YES ? yesToken : noToken;
         uint256 winningSupply = winningToken.totalSupply();
 
-        // Pro-rata share of total pot (minus accrued fees)
         uint256 pot = totalDeposited - accruedFees;
         usdtOut = (amount * pot) / winningSupply;
 
@@ -216,7 +199,7 @@ contract PredictionMarket is Ownable, ReentrancyGuard {
      */
     function impliedYesProbability() external view returns (uint256) {
         uint256 total = yesReserve + noReserve;
-        if (total == 0) return 5e17; // 50% default
+        if (total == 0) return 5e17;
         return (noReserve * 1e18) / total;
     }
 
@@ -247,7 +230,7 @@ contract PredictionMarket is Ownable, ReentrancyGuard {
             closesAt:        uint64(closingTime),
             resolvesAt:      0,
             state:           state,
-            resolution:      IMarket.OutcomeIndex(uint8(resolvedOutcome)), // safe: enums share same values
+            resolution:      IMarket.OutcomeIndex(uint8(resolvedOutcome)),
             collateralToken: address(usdt),
             yesToken:        address(yesToken),
             noToken:         address(noToken),

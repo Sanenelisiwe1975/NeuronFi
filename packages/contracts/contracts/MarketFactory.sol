@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -16,19 +15,14 @@ import "./PredictionMarket.sol";
  */
 contract MarketFactory is Ownable {
 
-    /// @notice Default USDT token address.
     address public immutable usdt;
 
-    /// @notice Default protocol fee in basis points.
     uint256 public defaultFeeBps;
 
-    /// @notice Whether anyone can create markets (true) or only the owner (false).
     bool public permissionless;
 
-    /// @notice All deployed market addresses.
     address[] public markets;
 
-    /// @notice market address → active flag.
     mapping(address => bool) public isActive;
 
     event MarketCreated(
@@ -79,12 +73,11 @@ contract MarketFactory is Ownable {
             initialYesUsdt,
             initialNoUsdt,
             defaultFeeBps,
-            msg.sender  // market owner = creator
+            msg.sender
         );
 
         market = address(pm);
 
-        // Transfer seed liquidity from caller to new market
         if (seed > 0) {
             IERC20(usdt).transferFrom(msg.sender, market, seed);
         }
@@ -115,7 +108,6 @@ contract MarketFactory is Ownable {
         return active;
     }
 
-    /// @notice Total number of markets ever created.
     function marketCount() external view returns (uint256) {
         return markets.length;
     }

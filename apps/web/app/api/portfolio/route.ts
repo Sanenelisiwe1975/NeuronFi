@@ -26,7 +26,7 @@ async function getFromPostgres(): Promise<PortfolioRow[]> {
       `SELECT * FROM portfolio_snapshots ORDER BY snapshot_at DESC LIMIT 50`
     );
     await client.end();
-    return rows.reverse(); // oldest first for chart
+    return rows.reverse();
   } catch {
     return [];
   }

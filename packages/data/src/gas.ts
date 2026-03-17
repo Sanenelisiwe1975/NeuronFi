@@ -13,7 +13,6 @@
 
 import { ethers } from "ethers";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface GasSnapshot {
   /** Base fee of the latest block, in gwei. */
@@ -46,7 +45,6 @@ export const GAS_UNITS = {
 
 export type OperationType = keyof typeof GAS_UNITS;
 
-// ─── Internal helpers ──────────────────────────────────────────────────────────
 
 function weiToGwei(wei: bigint): number {
   return Number(wei) / 1e9;
@@ -57,7 +55,6 @@ function gweiToUsd(gwei: number, gasUnits: bigint, ethPriceUsd: number): number 
   return (weiCost / 1e18) * ethPriceUsd;
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
  * Fetches current gas prices from the network and calculates cost estimates.
@@ -73,7 +70,7 @@ export async function fetchGasSnapshot(
     const provider = new ethers.JsonRpcProvider(rpcUrl);
     const feeData = await provider.getFeeData();
 
-    const baseFeeWei = feeData.gasPrice ?? 20_000_000_000n; // fallback: 20 gwei
+    const baseFeeWei = feeData.gasPrice ?? 20_000_000_000n;
     const maxFeeWei = feeData.maxFeePerGas ?? baseFeeWei * 2n;
     const priorityFeeWei = feeData.maxPriorityFeePerGas ?? 1_500_000_000n;
 
@@ -95,7 +92,6 @@ export async function fetchGasSnapshot(
       snapshotAt: Date.now(),
     };
   } catch {
-    // Conservative fallback if RPC is unavailable
     const baseFeeGwei = 25;
     return {
       baseFeeGwei,
@@ -157,7 +153,6 @@ export function breakEvenProfitUsd(
   operation: OperationType,
   ethPriceUsd: number
 ): number {
-  // Entry + exit costs (worst case: both operations needed to realise profit)
   const entryCost = estimateOperationCostUsd(gas, operation, ethPriceUsd);
   const exitCost = estimateOperationCostUsd(gas, "marketExit", ethPriceUsd);
   return entryCost + exitCost;

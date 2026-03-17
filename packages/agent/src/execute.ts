@@ -68,22 +68,16 @@ async function createConditionalPayment(
   const usdtAddress = process.env["USDT_CONTRACT_ADDRESS"];
   if (!cpAddress || !treasury || !usdtAddress) return null;
 
-  // Performance fee: 1% of position, minimum 1 USDT (1_000_000 micro)
   const feeAmount = amountMicroUsdt / 100n < 1_000_000n ? 1_000_000n : amountMicroUsdt / 100n;
 
-  // marketId is the address zero-padded to 32 bytes
   const marketId = ethers.zeroPadValue(marketAddress, 32);
   const trigger  = isYes ? OutcomeIndex.YES : OutcomeIndex.NO;
 
-  // Expiry: 60 days from now (well past any market close + dispute window)
   const expiresAt = BigInt(Math.floor(Date.now() / 1000) + 60 * 24 * 60 * 60);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const usdt = new ethers.Contract(usdtAddress, ERC20_ABI, signer) as any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cp   = new ethers.Contract(cpAddress, CONDITIONAL_PAYMENT_ABI, signer) as any;
 
-  // Approve fee amount to ConditionalPayment contract
   const approveTx = await usdt.approve(cpAddress, feeAmount);
   await approveTx.wait();
 
@@ -95,7 +89,7 @@ async function createConditionalPayment(
     feeAmount,
     trigger,
     PayoffType.BINARY,
-    "0x",        // no custom payoff curve
+    "0x",
     expiresAt
   );
   const receipt = await tx.wait();
@@ -103,9 +97,7 @@ async function createConditionalPayment(
 }
 
 function getMarketContractAddress(marketId: string): string | null {
-  // If marketId is already an Ethereum address (from onchain discovery), use it directly
   if (ethers.isAddress(marketId)) return marketId;
-  // Otherwise fall back to env var lookup
   const id = marketId as string;
   const envKey = `MARKET_${id.toUpperCase().replace(/-/g, "_")}_ADDRESS`;
   return process.env[envKey] ?? null;
@@ -141,23 +133,18 @@ async function executeEnterMarket(
   try {
     const signer = getEthersSigner(rpcUrl);
     const usdtAddress = process.env["USDT_CONTRACT_ADDRESS"]!;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const usdt = new ethers.Contract(usdtAddress, ERC20_ABI, signer) as any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const market = new ethers.Contract(contractAddress, PREDICTION_MARKET_ABI, signer) as any;
 
     const isYes = action.outcome === "YES";
 
-    // Quote expected tokens out (for slippage guard — accept 95% of quote)
     const expectedTokens: bigint = await market.quoteEnterPosition(isYes, action.amountMicroUsdt);
     const minTokensOut = (expectedTokens * 95n) / 100n;
 
-    // Approve USDT spend
     const approveTx = await usdt.approve(contractAddress, action.amountMicroUsdt);
     await approveTx.wait();
     console.log(`    ✓ USDT approved`);
 
-    // Enter position
     const tx = await market.enterPosition(isYes, action.amountMicroUsdt, minTokensOut);
     const receipt = await tx.wait();
     const feeWei = BigInt(receipt.gasUsed) * BigInt(receipt.gasPrice ?? 0);
@@ -199,17 +186,13 @@ async function executeExitMarket(
 
   try {
     const signer = getEthersSigner(rpcUrl);
-    // positionTokenAddress is the OutcomeToken contract; redeem() is on the market contract
     const marketAddress = getMarketContractAddress(action.marketId);
     if (!marketAddress) {
       return { ...base, success: true, skipped: true, skipReason: `Market contract not found for ${action.marketId}` };
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const positionToken = new ethers.Contract(action.positionTokenAddress, ERC20_ABI, signer) as any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const market = new ethers.Contract(marketAddress, PREDICTION_MARKET_ABI, signer) as any;
 
-    // Approve the market to burn our outcome tokens
     const approveTx = await positionToken.approve(marketAddress, action.amountTokens);
     await approveTx.wait();
 
@@ -375,7 +358,6 @@ export async function execute(
         result = await executeBridgeUsdt0(account, action as BridgeUsdt0Action, dryRun);
         break;
       default: {
-        // HOLD is filtered above; this branch is unreachable at runtime
         const _exhaustive: never = action;
         void _exhaustive;
         result = {

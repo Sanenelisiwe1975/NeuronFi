@@ -16,7 +16,6 @@
 import type { WalletAccountEvm } from "@tetherto/wdk-wallet-evm";
 import { getTokenAddress } from "./transactions.js";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 /** Full portfolio snapshot for one agent account. */
 export interface PortfolioSnapshot {
@@ -42,7 +41,6 @@ export interface PortfolioDisplay {
   snapshotAt: string;
 }
 
-// ─── Balance queries ──────────────────────────────────────────────────────────
 
 /**
  * Returns the native ETH balance of an account in wei.
@@ -77,12 +75,10 @@ export async function getXautBalance(
   try {
     return await account.getTokenBalance(contractAddress);
   } catch {
-    // XAUT is not deployed on testnets; return 0 gracefully
     return 0n;
   }
 }
 
-// ─── Portfolio snapshot ───────────────────────────────────────────────────────
 
 /**
  * Fetches a full portfolio snapshot for an account in one call.
@@ -122,7 +118,6 @@ export async function getPortfolioSnapshot(
   };
 }
 
-// ─── Formatting helpers ───────────────────────────────────────────────────────
 
 /**
  * Formats a wei amount as a human-readable ETH string.
@@ -164,7 +159,6 @@ export function formatPortfolio(snapshot: PortfolioSnapshot): PortfolioDisplay {
   };
 }
 
-// ─── Safety checks ────────────────────────────────────────────────────────────
 
 /** Minimum ETH balance required to pay gas fees (0.005 ETH in wei). */
 export const MIN_ETH_FOR_GAS = 5_000_000_000_000_000n;

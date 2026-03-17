@@ -38,7 +38,6 @@ const LOG_FILE = path.join(LOG_DIR, "agent-outcomes.jsonl");
 
 async function writeJsonLog(outcome: LoopOutcome): Promise<void> {
   await fs.mkdir(LOG_DIR, { recursive: true });
-  // Serialize bigints as strings
   const line =
     JSON.stringify(outcome, (_key, value) =>
       typeof value === "bigint" ? value.toString() : value
@@ -51,18 +50,15 @@ async function writeToPostgres(outcome: LoopOutcome): Promise<void> {
   const databaseUrl = process.env["DATABASE_URL"];
   if (!databaseUrl) return;
 
-  // Lazy import pg to avoid hard dependency when not configured
   try {
     const { default: pg } = await import("pg" as string) as { default: typeof import("pg") };
     const client = new pg.Client({ connectionString: databaseUrl });
     await client.connect();
 
     try {
-      // Serialize bigints
       const serialize = (obj: unknown): string =>
         JSON.stringify(obj, (_k, v) => (typeof v === "bigint" ? v.toString() : v));
 
-      // Insert loop outcome
       const { rows } = await client.query<{ id: number }>(
         `INSERT INTO loop_outcomes (iteration, network, duration_ms, signals, plan, decision, executions, portfolio)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -81,7 +77,6 @@ async function writeToPostgres(outcome: LoopOutcome): Promise<void> {
 
       const outcomeId = rows[0]?.id;
 
-      // Insert individual trades
       for (const exec of outcome.executions) {
         await client.query(
           `INSERT INTO trades (loop_outcome_id, action_type, tx_hash, fee_wei, success, error, executed_at)
@@ -98,7 +93,6 @@ async function writeToPostgres(outcome: LoopOutcome): Promise<void> {
         );
       }
 
-      // Insert portfolio snapshot
       await client.query(
         `INSERT INTO portfolio_snapshots (address, eth_wei, usdt_micro, xaut_micro, total_usdt)
          VALUES ($1, $2, $3, $4, $5)`,
@@ -145,10 +139,9 @@ async function writeToRedis(outcome: LoopOutcome): Promise<void> {
           summary: outcome.plan.summary,
           updatedAt: new Date().toISOString(),
         }),
-        { EX: 300 } // 5-minute TTL
+        { EX: 300 }
       );
 
-      // Publish event for WebSocket consumers
       await client.publish(
         "agent:events",
         serialize({ type: "CYCLE_COMPLETE", iteration: outcome.iteration })
@@ -213,13 +206,12 @@ async function updatePriors(outcome: LoopOutcome): Promise<void> {
     return;
   }
 
-  // Update per-action priors
   for (const exec of executed) {
     const key = exec.actionType;
     const prior = store.markets[key] ?? { attempts: 0, successes: 0, estimatedSuccessRate: 0.5, totalGasWei: "0", lastUpdated: "" };
     prior.attempts += 1;
     if (exec.success) prior.successes += 1;
-    // Beta distribution posterior mean: (successes + 1) / (attempts + 2)
+  
     prior.estimatedSuccessRate = (prior.successes + 1) / (prior.attempts + 2);
     prior.totalGasWei = (BigInt(prior.totalGasWei) + (exec.feeWei ?? 0n)).toString();
     prior.lastUpdated = new Date().toISOString();
@@ -227,7 +219,7 @@ async function updatePriors(outcome: LoopOutcome): Promise<void> {
   }
 
   const globalSuccesses = executed.filter((e) => e.success).length;
-  // Exponential moving average of global success rate
+
   store.globalSuccessRate = 0.8 * store.globalSuccessRate + 0.2 * (globalSuccesses / executed.length);
 
   const successRate = globalSuccesses / executed.length;
@@ -236,7 +228,6 @@ async function updatePriors(outcome: LoopOutcome): Promise<void> {
   store.updatedAt = new Date().toISOString();
   await savePriors(store);
 }
-
 
 /**
  * Runs the Learn phase — persists the loop outcome and updates priors.

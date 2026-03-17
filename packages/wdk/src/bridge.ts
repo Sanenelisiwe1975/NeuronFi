@@ -17,7 +17,6 @@
 import type { WalletAccountEvm } from "@tetherto/wdk-wallet-evm";
 import Usdt0ProtocolEvm from "@tetherto/wdk-protocol-bridge-usdt0-evm";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 /** Chains supported by the USDT0 OFT bridge. */
 export type BridgeTargetChain = "arbitrum" | "polygon" | "berachain";
@@ -54,11 +53,9 @@ export interface BridgeQuote {
   totalFeeWei: bigint;
 }
 
-// ─── Max bridge fee cap (0.005 ETH) ──────────────────────────────────────────
 
-const BRIDGE_MAX_FEE = 5_000_000_000_000_000n; // 0.005 ETH
+const BRIDGE_MAX_FEE = 5_000_000_000_000_000n;
 
-// ─── Quote ────────────────────────────────────────────────────────────────────
 
 /**
  * Estimates the cost of bridging USDT to another chain via USDT0.
@@ -84,7 +81,6 @@ export async function quoteBridgeUsdt0(
   };
 }
 
-// ─── Execute ──────────────────────────────────────────────────────────────────
 
 /**
  * Bridges USD₮ to another chain using the USDT0 LayerZero OFT protocol.

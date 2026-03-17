@@ -11,7 +11,6 @@
 
 import { z } from "zod";
 
-// ─── Schemas ───────────────────────────────────────────────────────────────────
 
 const BaseActionSchema = z.object({
   /** Unique action ID (nanoid-style). */
@@ -54,7 +53,7 @@ export const RebalanceActionSchema = BaseActionSchema.extend({
   /** Token to sell (reduce allocation). */
   fromToken: z.enum(["USDT", "XAUT"]),
   /** Token to buy / deploy (increase allocation). */
-  toAllocation: z.string(), // e.g. "yield", "prediction-markets"
+  toAllocation: z.string(),
   /** Amount to rebalance in micro-USDT. */
   amountMicroUsdt: z.bigint(),
 });
@@ -89,7 +88,6 @@ export type HoldAction = z.infer<typeof HoldActionSchema>;
 export type BridgeUsdt0Action = z.infer<typeof BridgeUsdt0ActionSchema>;
 export type AgentAction = z.infer<typeof ActionSchema>;
 
-// ─── Action plan ──────────────────────────────────────────────────────────────
 
 export const ActionPlanSchema = z.object({
   /** Overall rationale from the LLM. */
@@ -108,7 +106,6 @@ export const ActionPlanSchema = z.object({
 
 export type ActionPlan = z.infer<typeof ActionPlanSchema>;
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
  * Generates a simple action ID (timestamp + random suffix).

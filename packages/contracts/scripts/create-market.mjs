@@ -52,8 +52,6 @@ const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, wallet);
 
 const QUESTION    = "Will ETH price be above $2,500 within 7 days?";
 const closingTime = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60;
-// Pass 0,0 for initial reserves to avoid the double-transfer bug in the deployed contract.
-// The agent's first enterPosition() call will seed the AMM reserves.
 const SEED_YES    = 0n;
 const SEED_NO     = 0n;
 

@@ -13,7 +13,6 @@ import WalletManagerEvm, {
   type WalletAccountEvm,
 } from "@tetherto/wdk-wallet-evm";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 /** Configuration for the WDK wallet manager. */
 export interface WalletConfig {
@@ -39,12 +38,10 @@ export interface AccountInfo {
   derivationIndex: number;
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
 
 /** Default max fee: 0.001 ETH in wei. */
 const DEFAULT_MAX_FEE = 1_000_000_000_000_000n;
 
-// ─── WDK Wallet Manager ───────────────────────────────────────────────────────
 
 /**
  * AgentWallet wraps WalletManagerEvm and provides the agent with

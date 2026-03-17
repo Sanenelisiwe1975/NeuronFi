@@ -1,4 +1,3 @@
-// Minimal Hardhat config for compilation only — no plugins, no toolbox conflict.
 require("dotenv/config");
 
 module.exports = {
