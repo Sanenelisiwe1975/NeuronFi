@@ -164,7 +164,6 @@ async function executeEnterMarket(
 
     console.log(`    ✓ TX: ${receipt.hash} | fee: ${feeWei} wei`);
 
-    // Lock a performance fee in ConditionalPayment — released only if prediction is correct
     try {
       const cpHash = await createConditionalPayment(signer, contractAddress, isYes, action.amountMicroUsdt);
       if (cpHash) console.log(`    ✓ ConditionalPayment created: ${cpHash}`);
