@@ -108,8 +108,8 @@ export function PortfolioChart({ snapshots }: Props) {
 
       {/* Delta badge */}
       {data.length >= 2 && (() => {
-        const first = data[0].value;
-        const last  = data[data.length - 1].value;
+        const first = data[0]?.value ?? 0;
+        const last  = data[data.length - 1]?.value ?? 0;
         const delta = ((last - first) / first) * 100;
         const sign  = delta >= 0 ? "+" : "";
         return (
