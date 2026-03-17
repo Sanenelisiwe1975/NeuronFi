@@ -141,6 +141,8 @@ async function writeToRedis(outcome: LoopOutcome): Promise<void> {
           lastCycleMs: outcome.durationMs,
           executions: outcome.executions,
           marketSentiment: outcome.plan.marketSentiment,
+          reasoning: outcome.plan.reasoning,
+          summary: outcome.plan.summary,
           updatedAt: new Date().toISOString(),
         }),
         { EX: 300 } // 5-minute TTL

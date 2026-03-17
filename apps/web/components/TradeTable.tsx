@@ -17,10 +17,11 @@ interface Props {
 }
 
 const ACTION_CONFIG: Record<string, { color: string; glyph: string }> = {
-  ENTER_MARKET: { color: "#00e676", glyph: "▲" },
-  EXIT_MARKET:  { color: "#40c4ff", glyph: "▼" },
-  REBALANCE:    { color: "#ffab00", glyph: "⇄" },
-  HOLD:         { color: "#3a3a3a", glyph: "◆" },
+  ENTER_MARKET:  { color: "#00e676", glyph: "▲" },
+  EXIT_MARKET:   { color: "#40c4ff", glyph: "▼" },
+  REBALANCE:     { color: "#ffab00", glyph: "⇄" },
+  HOLD:          { color: "#3a3a3a", glyph: "◆" },
+  BRIDGE_USDT0:  { color: "#b9a8e8", glyph: "⇢" },
 };
 
 function TxHash({ hash }: { hash: string }) {
