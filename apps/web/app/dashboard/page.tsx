@@ -89,7 +89,7 @@ function ProbBar({ yes }: { yes: number }) {
 
 // ── Market Card ────────────────────────────────────────────────────────────────
 function MarketCard({ market, onClick }: { market: Market; onClick: () => void }) {
-  const cat = CATEGORY_COLOR[market.category] ?? CATEGORY_COLOR["Other"];
+  const cat = CATEGORY_COLOR[market.category] ?? { bg: "#f5f5f5", text: "#888888", border: "#e0e0e0" };
   const trendUp = (market.trend[market.trend.length - 1] ?? 0) >= (market.trend[0] ?? 0);
 
   return (
@@ -419,8 +419,8 @@ export default function PredictionMarketsPage() {
               ) : (
                 <div style={{ background: "#fff", border: "1px solid #ede8e8", borderRadius: 16, padding: "22px" }}>
                   <p style={{ fontFamily: "'DM Serif Display', serif", fontSize: 15, color: "#2a2020", marginBottom: 16 }}>Top movers</p>
-                  {[...MARKETS].sort((a, b) => Math.abs(b.trend[b.trend.length-1] - b.trend[0]) - Math.abs(a.trend[a.trend.length-1] - a.trend[0])).slice(0, 4).map(m => {
-                    const delta = m.trend[m.trend.length - 1] - m.trend[0];
+                  {[...MARKETS].sort((a, b) => Math.abs((b.trend[b.trend.length-1] ?? 0) - (b.trend[0] ?? 0)) - Math.abs((a.trend[a.trend.length-1] ?? 0) - (a.trend[0] ?? 0))).slice(0, 4).map(m => {
+                    const delta = (m.trend[m.trend.length - 1] ?? 0) - (m.trend[0] ?? 0);
                     const up = delta >= 0;
                     return (
                       <div key={m.id} onClick={() => setSelected(m)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid #f5f0f0", cursor: "pointer" }}>
