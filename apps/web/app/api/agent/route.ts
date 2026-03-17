@@ -31,6 +31,8 @@ interface AgentState {
     executedAt: string;
   }>;
   marketSentiment: string;
+  reasoning: string;
+  summary: string;
   updatedAt: string;
 }
 
