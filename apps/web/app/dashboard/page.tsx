@@ -598,6 +598,39 @@ export default function PredictionMarketsPage() {
                   resolutions.map((r, i) => <ResolutionRow key={i} r={r} />)
                 )}
               </div>
+
+              {/* ConditionalPayment escrows */}
+              <div style={{ background: "#fff", border: "1px solid #ede8e8", borderRadius: 16, padding: "22px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <p style={{ fontFamily: "'DM Serif Display', serif", fontSize: 16 }}>Performance escrows</p>
+                  <span style={{ fontSize: 11, background: "#f0f5f0", border: "1px solid #cde0cd", color: "#5f9a5f", borderRadius: 99, padding: "3px 10px", fontWeight: 500 }}>
+                    {conditionalPayments.filter(p => p.status === "PENDING").length} active
+                  </span>
+                </div>
+                <p style={{ fontSize: 11, color: "#c4b8b8", marginBottom: 16 }}>USD₮ locked — released only if agent prediction is correct</p>
+                {conditionalPayments.length === 0 ? (
+                  <p style={{ fontSize: 13, color: "#c4b8b8", textAlign: "center", padding: "20px 0" }}>No escrows yet</p>
+                ) : (
+                  conditionalPayments.map((p, i) => (
+                    <div key={p.id} style={{ display: "flex", flexDirection: "column", gap: 4, padding: "12px 0", borderBottom: i < conditionalPayments.length - 1 ? "1px solid #f5f0f0" : "none" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: "#2a2020", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginRight: 10 }}>
+                          {p.question ?? `Market ${p.marketId.slice(0, 10)}…`}
+                        </span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "#5f9a5f", flexShrink: 0 }}>${p.amountUsdt} USD₮</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <span style={{ fontSize: 10, color: "#7b62c9", background: "#f3f0fb", border: "1px solid #ddd5f5", borderRadius: 99, padding: "2px 8px" }}>
+                          if {p.triggerOutcome}
+                        </span>
+                        <span style={{ fontSize: 10, color: p.status === "CLAIMED" ? "#5f9a5f" : p.status === "REFUNDED" ? "#c97070" : "#9a8e8e", fontWeight: 500 }}>
+                          {p.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
 
             {/* Activity log */}
