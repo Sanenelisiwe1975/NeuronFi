@@ -295,7 +295,9 @@ function ResolutionRow({ r }: { r: Resolution }) {
 
 export default function PredictionMarketsPage() {
   const [activeTab, setActiveTab] = useState<"markets" | "portfolio" | "agent">("markets");
-  const [filter, setFilter] = useState<string>("All");
+  const [filter, setFilter]   = useState<string>("All");
+  const [search, setSearch]   = useState<string>("");
+  const [sortBy, setSortBy]   = useState<"volume" | "closes" | "probability" | "trending">("trending");
   const [selected, setSelected] = useState<Market | null>(null);
 
   const [agentState, setAgentState]           = useState<AgentState | null>(null);
