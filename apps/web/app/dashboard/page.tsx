@@ -528,6 +528,26 @@ export default function PredictionMarketsPage() {
               ⛽ {agentState.gasGwei} gwei
             </span>
           )}
+          {walletAddress ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 12px", background: "#f3f0fb", border: "1px solid #ddd5f5", borderRadius: 99 }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#7b62c9", display: "block" }} />
+              <span style={{ fontSize: 11, color: "#7b62c9", fontWeight: 500 }}>
+                {walletAddress.slice(0, 6)}…{walletAddress.slice(-4)}
+              </span>
+              {userSubPlan && (
+                <span style={{ fontSize: 10, background: "#ede8ff", color: "#7b62c9", borderRadius: 99, padding: "1px 7px", fontWeight: 600 }}>{userSubPlan}</span>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={connectWallet}
+              disabled={connectingWallet}
+              style={{ padding: "6px 14px", borderRadius: 99, border: "1px solid #ddd5f5", background: "#f3f0fb", color: "#7b62c9", fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}
+            >
+              {connectingWallet ? "Connecting…" : "Connect Wallet"}
+            </button>
+          )}
         </div>
       </header>
 
