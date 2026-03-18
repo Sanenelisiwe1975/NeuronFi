@@ -14,8 +14,20 @@ interface AgentState {
   marketSentiment: string;
   reasoning: string;
   summary: string;
+  gasGwei: string | null;
   updatedAt: string;
   status: "RUNNING" | "WAITING";
+}
+
+interface ConditionalPayment {
+  id: string;
+  creator: string;
+  beneficiary: string;
+  marketId: string;
+  question: string | null;
+  amountUsdt: string;
+  triggerOutcome: string;
+  status: "PENDING" | "CLAIMED" | "REFUNDED";
 }
 
 interface LiveMarket {
