@@ -148,8 +148,16 @@ function liveToMarket(m: LiveMarket, i: number): Market {
   const trend = Array.from({ length: 6 }, (_, k) =>
     Math.max(1, Math.min(99, yesProb + (k - 3) * 2 + Math.round(Math.random() * 3 - 1)))
   );
+  const q = m.question.toLowerCase();
+  const category =
+    /\b(btc|eth|bitcoin|ethereum|crypto|defi|nft|token|solana|usdt|stablecoin|blockchain)\b/.test(q) ? "Crypto" :
+    /\b(fed|rate|gdp|inflation|recession|macro|dollar|treasury|economy|central bank)\b/.test(q) ? "Macro" :
+    /\b(ai|science|nasa|mars|space|research|gene|medicine|climate|physics)\b/.test(q) ? "Science" :
+    /\b(election|president|congress|senate|vote|poll|government|policy|war|ukraine|china)\b/.test(q) ? "Politics" :
+    /\b(nba|nfl|soccer|world cup|champion|sport|tennis|cricket|football|basketball)\b/.test(q) ? "Sports" :
+    "Other";
   return {
-    id: m.address, title: m.question, category: "Crypto",
+    id: m.address, title: m.question, category,
     yesProb, volume, volumeRaw, closes, daysLeft: m.daysLeft ?? 0,
     trend, hot: i < 2, address: m.address,
     agentYesUsdt: m.agentYesUsdt, agentNoUsdt: m.agentNoUsdt,
