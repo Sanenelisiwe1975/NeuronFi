@@ -74,8 +74,25 @@ async function getFromLog(): Promise<AgentState | null> {
   }
 }
 
+async function getGasGwei(): Promise<string | null> {
+  const rpcUrl = process.env["RPC_URL"];
+  if (!rpcUrl) return null;
+  try {
+    const { ethers } = await import("ethers");
+    const provider = new ethers.JsonRpcProvider(rpcUrl);
+    const feeData = await provider.getFeeData();
+    if (!feeData.gasPrice) return null;
+    return (Number(feeData.gasPrice) / 1e9).toFixed(2);
+  } catch {
+    return null;
+  }
+}
+
 export async function GET() {
-  const state = (await getFromRedis()) ?? (await getFromLog());
+  const [state, gasGwei] = await Promise.all([
+    (async () => (await getFromRedis()) ?? (await getFromLog()))(),
+    getGasGwei(),
+  ]);
 
   if (!state) {
     return NextResponse.json(
@@ -88,6 +105,7 @@ export async function GET() {
         marketSentiment: "NEUTRAL",
         reasoning: "",
         summary: "",
+        gasGwei,
         updatedAt: new Date().toISOString(),
         status: "WAITING",
       },
@@ -95,5 +113,5 @@ export async function GET() {
     );
   }
 
-  return NextResponse.json({ ...state, status: "RUNNING" });
+  return NextResponse.json({ ...state, gasGwei, status: "RUNNING" });
 }
