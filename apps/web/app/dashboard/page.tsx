@@ -230,11 +230,16 @@ function ResolutionRow({ r }: { r: Resolution }) {
         <span style={{ background: statusBg, borderRadius: 99, padding: "2px 9px", fontSize: 10, color: statusColor, fontWeight: 500, flexShrink: 0, border: `1px solid ${statusColor}30` }}>{statusText}</span>
       </div>
       {r.proposed && (
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: r.rationale ? 8 : 0 }}>
           <span style={{ fontSize: 11, color: outcomeColor, fontWeight: 600 }}>→ {r.outcome}</span>
           <span style={{ fontSize: 11, color: "#b8aeae" }}>{r.source}</span>
           {r.proposedAt && <span style={{ fontSize: 11, color: "#b8aeae" }}>{new Date(r.proposedAt).toLocaleString()}</span>}
         </div>
+      )}
+      {r.rationale && (
+        <p style={{ fontSize: 11, color: "#7b62c9", fontStyle: "italic", lineHeight: 1.5, background: "#f9f7fe", borderRadius: 8, padding: "8px 10px", marginTop: 4 }}>
+          &ldquo;{r.rationale}&rdquo;
+        </p>
       )}
     </div>
   );
