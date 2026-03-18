@@ -729,15 +729,33 @@ export default function PredictionMarketsPage() {
                       </span>
                     </div>
                     <p style={{ fontSize: 11, color: "#c4b8b8", marginBottom: 14 }}>${subscriptionState.totalRevenue} USD₮ total revenue</p>
-                    {subscriptionState.plans.filter(p => p.name !== "FREE").map(plan => (
-                      <div key={plan.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "1px solid #f5f0f0" }}>
-                        <div>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: "#2a2020" }}>{plan.name}</span>
-                          <span style={{ fontSize: 11, color: "#c4b8b8", marginLeft: 6 }}>{plan.periodDays}d</span>
+                    {subscriptionState.plans.filter(p => p.name !== "FREE").map(plan => {
+                      const isCurrentPlan = userSubPlan === plan.name;
+                      const priceNum = Number(plan.priceUsdt.replace("$", ""));
+                      return (
+                        <div key={plan.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #f5f0f0" }}>
+                          <div>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: "#2a2020" }}>{plan.name}</span>
+                            <span style={{ fontSize: 11, color: "#c4b8b8", marginLeft: 6 }}>{plan.periodDays}d</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 13, fontWeight: 500, color: "#7b62c9" }}>{plan.priceUsdt}</span>
+                            {isCurrentPlan ? (
+                              <span style={{ fontSize: 10, background: "#f0f5f0", color: "#5f9a5f", border: "1px solid #cde0cd", borderRadius: 99, padding: "2px 8px", fontWeight: 600 }}>Active</span>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={subscribing === plan.id || !walletAddress}
+                                onClick={() => subscribeToPlan(plan.id, priceNum)}
+                                style={{ fontSize: 11, padding: "4px 11px", borderRadius: 99, border: "1px solid #ddd5f5", background: subscribing === plan.id ? "#f3f0fb" : "#7b62c9", color: subscribing === plan.id ? "#7b62c9" : "#fff", cursor: walletAddress ? "pointer" : "not-allowed", fontFamily: "'DM Sans', sans-serif", fontWeight: 500, opacity: !walletAddress ? 0.5 : 1 }}
+                              >
+                                {subscribing === plan.id ? "…" : walletAddress ? "Subscribe" : "Connect wallet"}
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <span style={{ fontSize: 13, fontWeight: 500, color: "#7b62c9" }}>{plan.priceUsdt} USD₮</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
                 </div>
