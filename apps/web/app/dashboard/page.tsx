@@ -339,7 +339,35 @@ export default function PredictionMarketsPage() {
     : MOCK_MARKETS;
 
   const categories = ["All", ...Array.from(new Set(markets.map(m => m.category)))];
-  const filtered   = filter === "All" ? markets : markets.filter(m => m.category === filter);
+
+  const filtered = markets
+    .filter(m => filter === "All" || m.category === filter)
+    .filter(m => !search || m.title.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      if (sortBy === "volume")      return b.volumeRaw - a.volumeRaw;
+      if (sortBy === "closes")      return a.daysLeft - b.daysLeft;
+      if (sortBy === "probability") return Math.abs(b.yesProb - 50) - Math.abs(a.yesProb - 50);
+      return (b.hot ? 1 : 0) - (a.hot ? 1 : 0);
+    });
+
+  const winRate = (() => {
+    const resolved = resolutions.filter(r => r.finalized && r.outcome !== "UNRESOLVED");
+    if (resolved.length === 0) return null;
+    const correct = resolved.filter(r => {
+      const agentTrade = trades.find(t => t.actionType === "ENTER_MARKET");
+      return agentTrade && r.proposed;
+    }).length;
+    return Math.round((correct / resolved.length) * 100);
+  })();
+
+  const portfolioPnl = (() => {
+    if (snapshots.length < 2) return null;
+    const first = Number(snapshots[0]?.totalUsdt ?? 0);
+    const last  = Number(snapshots[snapshots.length - 1]?.totalUsdt ?? 0);
+    if (first === 0) return null;
+    const pct = ((last - first) / first) * 100;
+    return { pct: pct.toFixed(1), positive: pct >= 0 };
+  })();
 
   const agentRunning = agentState?.status === "RUNNING";
 
