@@ -56,3 +56,5 @@ packages/agent/logs/
 # Docker volumes
 infra/pgdata/
 infra/redisdata/
+
+.vercel
