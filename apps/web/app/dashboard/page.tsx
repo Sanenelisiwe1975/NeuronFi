@@ -455,6 +455,44 @@ export default function PredictionMarketsPage() {
     }
   }, [subscriptionState]);
 
+  const [subscribing, setSubscribing] = useState<number | null>(null);
+
+  const subscribeToPlan = useCallback(async (planId: number, priceUsdt: number) => {
+    if (!walletAddress) { alert("Connect your wallet first."); return; }
+    const eth = (window as typeof window & { ethereum?: { request: (a: { method: string; params: unknown[] }) => Promise<unknown> } }).ethereum;
+    if (!eth) return;
+
+    const SM_ADDRESS = process.env["NEXT_PUBLIC_SUBSCRIPTION_MANAGER_ADDRESS"] ?? "0xdD8Ac6Aff3D034e9BEC91482140F3C3792D5148B";
+    const USDT_ADDRESS = process.env["NEXT_PUBLIC_USDT_ADDRESS"] ?? "0x7169D38820dfd117C3FA1f22a697dBA58d90BA06";
+    const priceMicro = BigInt(priceUsdt * 1_000_000);
+
+    setSubscribing(planId);
+    try {
+      const { ethers } = await import("ethers");
+      const provider = new ethers.BrowserProvider(eth as Parameters<typeof ethers.BrowserProvider>[0]);
+      const signer = await provider.getSigner();
+
+      if (priceMicro > 0n) {
+        const usdt = new ethers.Contract(USDT_ADDRESS, ["function approve(address,uint256) returns (bool)"], signer);
+        const approveTx = await (usdt as any).approve(SM_ADDRESS, priceMicro);
+        await approveTx.wait();
+      }
+
+      const sm = new ethers.Contract(SM_ADDRESS, ["function subscribe(uint8 plan) external"], signer);
+      const tx = await (sm as any).subscribe(planId);
+      await tx.wait();
+
+      const plan = await fetch(`/api/subscription/user?address=${walletAddress}`).then(r => r.json()).then(d => d.plan).catch(() => null);
+      setUserSubPlan(plan);
+      alert(`Subscribed to plan successfully!`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Transaction failed";
+      alert(`Subscribe failed: ${msg.slice(0, 120)}`);
+    } finally {
+      setSubscribing(null);
+    }
+  }, [walletAddress]);
+
   const agentRunning = agentState?.status === "RUNNING";
 
   const latestSnap  = snapshots[snapshots.length - 1];
