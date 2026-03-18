@@ -43,22 +43,24 @@ export async function GET() {
       active:         cfg.active,
     }));
 
-    const subscribedFilter = sm.filters.Subscribed();
-    const events = await sm.queryFilter(subscribedFilter, -50000) as Array<{
-      args: { subscriber: string; plan: number; paidUntil: bigint };
-    }>;
-
-    const recentSubscribers = await Promise.all(
-      events.slice(-5).reverse().map(async (e) => {
-        const active = await sm.isActive(e.args.subscriber) as boolean;
-        return {
-          address:  e.args.subscriber,
-          plan:     PLAN_NAMES[e.args.plan] ?? "UNKNOWN",
-          paidUntil:new Date(Number(e.args.paidUntil) * 1000).toISOString(),
-          active,
-        };
-      })
-    );
+    let recentSubscribers: { address: string; plan: string; paidUntil: string; active: boolean }[] = [];
+    try {
+      const subscribedFilter = sm.filters.Subscribed();
+      const events = await sm.queryFilter(subscribedFilter, -10) as Array<{
+        args: { subscriber: string; plan: number; paidUntil: bigint };
+      }>;
+      recentSubscribers = await Promise.all(
+        events.slice(-5).reverse().map(async (e) => {
+          const active = await sm.isActive(e.args.subscriber) as boolean;
+          return {
+            address:  e.args.subscriber,
+            plan:     PLAN_NAMES[e.args.plan] ?? "UNKNOWN",
+            paidUntil:new Date(Number(e.args.paidUntil) * 1000).toISOString(),
+            active,
+          };
+        })
+      );
+    } catch { /* no recent subscriber events */ }
 
     return NextResponse.json({
       contractAddress:   smAddr,
