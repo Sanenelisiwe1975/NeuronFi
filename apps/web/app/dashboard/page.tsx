@@ -108,19 +108,23 @@ interface Market {
   category: string;
   yesProb: number;
   volume: string;
+  volumeRaw: number;
   closes: string;
+  daysLeft: number;
   trend: number[];
   hot: boolean;
   address?: string;
+  agentYesUsdt: string | null;
+  agentNoUsdt:  string | null;
 }
 
 const MOCK_MARKETS: Market[] = [
-  { id: 1, title: "ETH surpasses $5,000 before June 2026",  category: "Crypto",  yesProb: 61, volume: "$2.4M",  closes: "Jun 30", trend: [44,48,52,55,58,61], hot: true },
-  { id: 2, title: "US Fed cuts rates at least twice in 2026",  category: "Macro",   yesProb: 74, volume: "$5.1M",  closes: "Dec 31", trend: [60,65,68,71,72,74], hot: true },
-  { id: 3, title: "First human Mars landing before 2030",     category: "Science", yesProb: 18, volume: "$890K",  closes: "Dec 31", trend: [22,20,19,21,18,18], hot: false },
-  { id: 4, title: "BTC dominance exceeds 60% this quarter",   category: "Crypto",  yesProb: 47, volume: "$1.7M",  closes: "Mar 31", trend: [40,43,45,48,46,47], hot: false },
-  { id: 5, title: "AI wins Nobel Prize in Medicine by 2027",  category: "Science", yesProb: 33, volume: "$420K",  closes: "Dec 31", trend: [28,29,31,33,33,33], hot: false },
-  { id: 6, title: "Global inflation drops below 2% average",  category: "Macro",   yesProb: 52, volume: "$3.2M",  closes: "Sep 30", trend: [45,47,50,51,52,52], hot: true  },
+  { id: 1, title: "ETH surpasses $5,000 before June 2026",   category: "Crypto",  yesProb: 61, volume: "$2.4M",  volumeRaw: 2400000, closes: "Jun 30", daysLeft: 103, trend: [44,48,52,55,58,61], hot: true,  agentYesUsdt: null, agentNoUsdt: null },
+  { id: 2, title: "US Fed cuts rates at least twice in 2026", category: "Macro",   yesProb: 74, volume: "$5.1M",  volumeRaw: 5100000, closes: "Dec 31", daysLeft: 287, trend: [60,65,68,71,72,74], hot: true,  agentYesUsdt: "50.00", agentNoUsdt: null },
+  { id: 3, title: "First human Mars landing before 2030",     category: "Science", yesProb: 18, volume: "$890K",  volumeRaw: 890000,  closes: "Dec 31", daysLeft: 287, trend: [22,20,19,21,18,18], hot: false, agentYesUsdt: null, agentNoUsdt: null },
+  { id: 4, title: "BTC dominance exceeds 60% this quarter",   category: "Crypto",  yesProb: 47, volume: "$1.7M",  volumeRaw: 1700000, closes: "Mar 31", daysLeft: 13,  trend: [40,43,45,48,46,47], hot: false, agentYesUsdt: null, agentNoUsdt: "25.00" },
+  { id: 5, title: "AI wins Nobel Prize in Medicine by 2027",  category: "Science", yesProb: 33, volume: "$420K",  volumeRaw: 420000,  closes: "Dec 31", daysLeft: 287, trend: [28,29,31,33,33,33], hot: false, agentYesUsdt: null, agentNoUsdt: null },
+  { id: 6, title: "Global inflation drops below 2% average",  category: "Macro",   yesProb: 52, volume: "$3.2M",  volumeRaw: 3200000, closes: "Sep 30", daysLeft: 195, trend: [45,47,50,51,52,52], hot: true,  agentYesUsdt: null, agentNoUsdt: null },
 ];
 
 const CATEGORY_COLOR: Record<string, { bg: string; text: string; border: string }> = {
