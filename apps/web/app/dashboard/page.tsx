@@ -35,9 +35,12 @@ interface LiveMarket {
   question: string;
   yesProbability: number;
   closesAt: string;
+  daysLeft: number;
   volumeUsdt: string;
   tradeable: boolean;
   resolvedOutcome: number;
+  agentYesUsdt: string | null;
+  agentNoUsdt:  string | null;
 }
 
 interface VaultState {
