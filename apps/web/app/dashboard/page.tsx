@@ -361,7 +361,7 @@ export default function PredictionMarketsPage() {
     ? liveMarkets.map((m, i) => liveToMarket(m, i))
     : MOCK_MARKETS;
 
-  const categories = ["All", ...Array.from(new Set(markets.map(m => m.category)))];
+  const categories = ["All", "Crypto", "Macro", "Politics", "Science", "Sports", "Other"];
 
   const filtered = markets
     .filter(m => filter === "All" || m.category === filter)
