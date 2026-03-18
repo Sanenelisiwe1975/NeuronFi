@@ -2,7 +2,7 @@
 
 An autonomous on-chain agent that continuously observes DeFi markets, reasons about opportunities using Claude (Anthropic), decides risk-adjusted positions, executes trades via the Tether WDK, and learns from every cycle — all without human intervention.
 
-Built for the **Tether Hackathon Galáctica: WDK Edition 1** — Track: **Autonomous DeFi Agent**.
+Built for the **Tether Hackathon Galáctica: WDK Edition 1** — Track: **Autonomous DeFi Agent** + **Agent Wallets**.
 
 ---
 
@@ -22,11 +22,11 @@ Built for the **Tether Hackathon Galáctica: WDK Edition 1** — Track: **Autono
 ```
 
 1. **Observe** — fetches ETH/USDT/XAUT prices (Chainlink + CoinGecko fallback), gas snapshot, Uniswap V3 liquidity, and active prediction market opportunities. Auto-tops-up agent USDT from `AgentVault` if balance drops below $50.
-2. **Reason** — sends the full market state to Claude Sonnet via LangChain.js; receives a ranked list of `AgentAction` objects (OpenClaw-style planning engine).
+2. **Reason** — sends the full market state to Claude Sonnet 4.6 via LangChain.js; receives a ranked list of `AgentAction` objects (OpenClaw-style planning engine).
 3. **Decide** — applies global risk gates (USDT depeg halt, gas congestion halt) and per-action filters (min EV > 2%, max position size 5%, risk score ≤ 70).
 4. **Execute** — routes approved actions via the Tether WDK (`transferUSDT`, `transferXAUT`) and direct Solidity calls (`enterPosition`, `redeem`). After each market entry, locks a 1% performance fee in `ConditionalPayment` — released to treasury only if the prediction is correct.
 5. **Resolve** — after a market closes, the agent fetches the Chainlink price, compares it to the question threshold, calls `MarketResolver.aiResolve()` with a full rationale stored permanently on-chain, then finalises after the 24-hour dispute window.
-6. **Learn** — persists cycle outcomes to a JSON log, PostgreSQL, and Redis; updates Bayesian priors per action type.
+6. **Learn** — persists cycle outcomes to PostgreSQL and Redis; updates Bayesian priors (Beta distribution EMA) per action type.
 
 ---
 
@@ -35,23 +35,23 @@ Built for the **Tether Hackathon Galáctica: WDK Edition 1** — Track: **Autono
 ```
 autonomous-defi-agent/
 ├── apps/
-│   └── web/                  # Next.js 14 real-time dashboard
+│   └── web/                  # Next.js 16 real-time dashboard (Polymarket-style UI)
 ├── packages/
 │   ├── agent/                # Autonomous loop (observe→learn)
-│   ├── contracts/            # Solidity: AgentVault, PredictionMarket, MarketFactory
+│   ├── contracts/            # Solidity: AgentVault, PredictionMarket, MarketFactory,
+│   │                         #   MarketResolver, ConditionalPayment, SubscriptionManager
 │   ├── data/                 # Oracle, Uniswap V3 liquidity, gas feeds
-│   ├── planner/              # LLM reasoning engine (LangChain.js + Claude)
-│   ├── wdk/                  # Tether WDK wallet wrapper
+│   ├── planner/              # LLM reasoning engine (LangChain.js + Claude Sonnet 4.6)
+│   ├── wdk/                  # Tether WDK wallet wrapper + USDT0 LayerZero bridge
 │   ├── ui/                   # Shared React components
 │   ├── eslint-config/        # Shared ESLint presets
 │   └── typescript-config/    # Shared tsconfig bases
 ├── infra/
 │   ├── docker-compose.yml    # Postgres 16 + Redis 7
 │   └── init.sql              # Database schema
-└── .env.example              # All required environment variables
+├── vercel.json               # Vercel monorepo deployment config
+└── apps/web/.env.example     # All required dashboard environment variables
 ```
-
-Each package has its own README with detailed API docs.
 
 ---
 
@@ -59,10 +59,10 @@ Each package has its own README with detailed API docs.
 
 ### 1. Prerequisites
 
-- Node.js 20+
+- Node.js 18+
 - Docker (for Postgres + Redis)
-- An Ethereum RPC endpoint (Alchemy, Infura, or local node)
-- Anthropic API key (optional — falls back to mock planner without it)
+- An Ethereum RPC endpoint (Alchemy or Infura)
+- Anthropic API key
 
 ### 2. Install dependencies
 
@@ -73,8 +73,13 @@ npm install
 ### 3. Configure environment
 
 ```bash
-cp .env.example packages/agent/.env
-# Fill in RPC_URL, AGENT_SEED_PHRASE, ANTHROPIC_API_KEY, contract addresses
+# Agent
+cp packages/agent/.env.example packages/agent/.env
+# Fill in: RPC_URL, AGENT_SEED_PHRASE, ANTHROPIC_API_KEY, contract addresses
+
+# Dashboard
+cp apps/web/.env.example apps/web/.env.local
+# Fill in: RPC_URL, contract addresses
 ```
 
 ### 4. Start infrastructure
@@ -93,16 +98,14 @@ npm run build
 
 ```bash
 cd packages/contracts
-node scripts/deploy.mjs              # deploys AgentVault + MarketFactory
+node scripts/deploy.mjs              # AgentVault + MarketFactory
 node scripts/set-vault-agent.mjs     # authorises WDK wallet on AgentVault
-node scripts/deploy-resolver.mjs     # deploys MarketResolver + first PredictionMarket
-node scripts/deploy-conditional.mjs  # deploys ConditionalPayment + IMarket-compatible market
+node scripts/deploy-resolver.mjs     # MarketResolver + first PredictionMarket
+node scripts/deploy-conditional.mjs  # ConditionalPayment + IMarket-compatible market
+node scripts/deploy-subscription.mjs # SubscriptionManager (4 USDT tiers)
 ```
 
-Copy the printed addresses into `packages/agent/.env`:
-- `AGENT_VAULT_ADDRESS`, `MARKET_FACTORY_ADDRESS`
-- `MARKET_RESOLVER_ADDRESS`
-- `CONDITIONAL_PAYMENT_ADDRESS`, `TREASURY_ADDRESS`
+Copy the printed addresses into `packages/agent/.env` and `apps/web/.env.local`.
 
 ### 7. Run the agent
 
@@ -114,35 +117,57 @@ node --env-file=.env dist/index.js
 ### 8. Open the dashboard
 
 ```bash
-# In a separate terminal, copy .env vars to apps/web/.env.local first
-npm run dev --workspace=apps/web
+cd apps/web
+npm run dev
 # → http://localhost:3000/dashboard
 ```
+
+### 9. Deploy dashboard to Vercel (optional)
+
+```bash
+npx vercel --prod
+```
+
+Set all env vars from `apps/web/.env.example` in the Vercel dashboard before deploying.
 
 ---
 
 ## Environment Variables
 
+### Agent (`packages/agent/.env`)
+
 | Variable | Required | Description |
 |---|---|---|
-| `RPC_URL` | Yes | Ethereum JSON-RPC endpoint (Alchemy/Infura) |
-| `AGENT_SEED_PHRASE` | Yes | BIP-39 mnemonic (12 or 24 words) — WDK wallet |
-| `ANTHROPIC_API_KEY` | No | Claude API key (mock planner used if absent) |
+| `RPC_URL` | Yes | Ethereum JSON-RPC endpoint |
+| `AGENT_SEED_PHRASE` | Yes | BIP-39 mnemonic — WDK wallet |
+| `ANTHROPIC_API_KEY` | Yes | Claude API key |
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `REDIS_URL` | Yes | Redis connection string |
-| `USDT_CONTRACT_ADDRESS` | Yes | USD₮ ERC-20 contract address |
-| `XAUT_CONTRACT_ADDRESS` | Yes | XAU₮ ERC-20 contract address |
-| `AGENT_VAULT_ADDRESS` | Yes | Deployed AgentVault contract address |
-| `MARKET_FACTORY_ADDRESS` | Yes | Deployed MarketFactory contract address |
-| `MARKET_RESOLVER_ADDRESS` | Yes | Deployed MarketResolver contract address |
-| `CONDITIONAL_PAYMENT_ADDRESS` | Yes | Deployed ConditionalPayment contract address |
-| `TREASURY_ADDRESS` | Yes | Address that receives performance fees on correct predictions |
-| `AGENT_DRY_RUN` | No | `true` = log only, no real txs (default: `true`) |
-| `AGENT_LOOP_INTERVAL_MS` | No | Loop interval in ms (default: `60000`) |
-| `LLM_MODEL` | No | Claude model override (default: `claude-sonnet-4-6`) |
-| `WALLET_MAX_FEE_WEI` | No | Max gas per transfer in wei (default: `1000000000000000`) |
+| `USDT_CONTRACT_ADDRESS` | Yes | USD₮ ERC-20 address |
+| `XAUT_CONTRACT_ADDRESS` | Yes | XAU₮ ERC-20 address |
+| `AGENT_VAULT_ADDRESS` | Yes | Deployed AgentVault address |
+| `MARKET_FACTORY_ADDRESS` | Yes | Deployed MarketFactory address |
+| `MARKET_RESOLVER_ADDRESS` | Yes | Deployed MarketResolver address |
+| `CONDITIONAL_PAYMENT_ADDRESS` | Yes | Deployed ConditionalPayment address |
+| `SUBSCRIPTION_MANAGER_ADDRESS` | Yes | Deployed SubscriptionManager address |
+| `TREASURY_ADDRESS` | Yes | Performance fee recipient address |
+| `AGENT_DRY_RUN` | No | `true` = log only, no real txs (default: `false`) |
+| `USDT0_BRIDGE_ENABLED` | No | `true` = enable LayerZero USDT0 cross-chain bridging |
 
-See `.env.example` for the full list with default values.
+### Dashboard (`apps/web/.env.local`)
+
+| Variable | Description |
+|---|---|
+| `RPC_URL` | Ethereum JSON-RPC endpoint |
+| `REDIS_URL` | Redis — reads live agent state |
+| `DATABASE_URL` | PostgreSQL — reads trade history |
+| `MARKET_FACTORY_ADDRESS` | Fetches active markets from chain |
+| `AGENT_VAULT_ADDRESS` | Reads vault balances |
+| `USDT_CONTRACT_ADDRESS` | Token balance queries |
+| `MARKET_RESOLVER_ADDRESS` | Resolution event queries |
+| `CONDITIONAL_PAYMENT_ADDRESS` | Escrow status queries |
+| `SUBSCRIPTION_MANAGER_ADDRESS` | Subscription tier queries |
+| `TREASURY_ADDRESS` | Treasury address |
 
 ---
 
@@ -152,10 +177,11 @@ See `.env.example` for the full list with default values.
 |---|---|---|
 | `AgentVault` | `0x824a901E3609C5d8D6F874b31Fe736364190119D` | Holds USD₮; enforces $1,000/day agent withdrawal limit |
 | `MarketFactory` | `0x3947C99650879990cB2c0C0cbB22FE71e5CF11f9` | Creates and registers PredictionMarket instances |
-| `PredictionMarket` | `0xbfDa4f28C0df0ad6d3c7366667934F9c866483Bd` | Binary AMM — YES/NO outcome token market (IMarket-compatible) |
-| `OutcomeToken` | (deployed by market) | ERC-20 representing a single market outcome |
+| `PredictionMarket` | `0x42AeA76AC295A5903985EEF2dC7b875F8561A9f5` | Binary AMM — YES/NO outcome token market |
+| `PredictionMarket` | `0x6A58ee4901670b915Ca085db5A5d6e508d6400e5` | Second active market (IMarket-compatible) |
 | `MarketResolver` | `0x8e50025719b9f605C11Eb43c1683C9536eAdc8B0` | Multi-path resolution: AI oracle, Chainlink, UMA, multisig |
-| `ConditionalPayment` | `0xca2b23094987a1Cc0100A291eD701085464B4aE9` | Outcome-linked USDT escrow — performance fee released only if prediction is correct |
+| `ConditionalPayment` | `0xC53a881F97fa5AFFf966A150dD6A7151fACcb7f3` | Outcome-linked USDT escrow — fee released only on correct prediction |
+| `SubscriptionManager` | `0xdD8Ac6Aff3D034e9BEC91482140F3C3792D5148B` | On-chain subscription tiers paid in USDT (FREE/$0, BASIC/$29, PRO/$99, INSTITUTIONAL/$499) |
 
 ---
 
@@ -164,36 +190,33 @@ See `.env.example` for the full list with default values.
 | Layer | Technology |
 |---|---|
 | Wallet | Tether WDK (`@tetherto/wdk-wallet-evm`) |
+| Cross-chain bridge | USDT0 LayerZero OFT (`@tetherto/wdk-protocol-bridge-usdt0-evm`) |
 | AI Planning | LangChain.js + Claude Sonnet 4.6 (`@langchain/anthropic`) |
 | Price Feeds | Chainlink AggregatorV3 + CoinGecko REST API (fallback) |
 | DEX Data | Uniswap V3 pool queries via ethers.js |
 | Smart Contracts | Solidity 0.8 + Hardhat |
-| Dashboard | Next.js 14 App Router + Recharts |
+| Dashboard | Next.js 16 App Router + Recharts + MetaMask wallet connect |
 | Database | PostgreSQL 16 |
 | Cache / PubSub | Redis 7 |
 | Monorepo | Turborepo + npm workspaces |
+| Deployment | Vercel (dashboard) + Docker Compose (infra) |
 | Language | TypeScript ESM throughout |
 
 ---
 
-## Third-Party Services & APIs
+## Dashboard Features
 
-| Service | Purpose | Terms |
-|---|---|---|
-| [Anthropic Claude](https://anthropic.com) | LLM reasoning (claude-sonnet-4-6) | Commercial API |
-| [Alchemy](https://alchemy.com) | Ethereum RPC endpoint | Commercial API |
-| [Chainlink](https://chain.link) | On-chain price feeds (ETH/USD, XAU/USD, USDT/USD) | Open smart contracts |
-| [CoinGecko](https://coingecko.com) | Price fallback REST API | Free public API |
-| [Uniswap V3](https://uniswap.org) | Liquidity pool data | Open smart contracts |
-| [LangChain.js](https://js.langchain.com) | LLM framework | MIT license |
-| [OpenZeppelin](https://openzeppelin.com) | Solidity contract base classes | MIT license |
-| [ethers.js v6](https://ethers.org) | Ethereum library | MIT license |
+The dashboard is a Polymarket-style real-time UI visible at `/dashboard`:
 
----
-
-## Architecture
-
-See [ARCHITECTURE.md](ARCHITECTURE.md) for a detailed walkthrough of every module and how a single agent cycle flows end-to-end.
+- **Market cards** — probability hero number, YES/NO price display, days-left countdown, agent position badge, sparkline trend
+- **Search + sort** — filter by keyword, sort by volume / closing soon / probability / trending
+- **Category pills** — Crypto, Macro, Politics, Science, Sports
+- **KPI strip** — live markets count, total volume, resolutions, agent win rate, P&L
+- **Wallet connect** — MetaMask integration; shows connected address and active subscription plan
+- **Subscribe** — buy a BASIC/PRO/INSTITUTIONAL subscription directly from the UI (USDT approval + on-chain tx)
+- **Portfolio tab** — portfolio value chart, USDT/XAUT balances, trade history with Etherscan links
+- **Agent tab** — live reasoning, cycle time, gas price, ConditionalPayment escrows, last cycle actions
+- **Resolution feed** — AI rationale displayed per resolved market
 
 ---
 
@@ -206,7 +229,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for a detailed walkthrough of every modul
 - **Position cap** — individual positions clamped to 5% of total portfolio
 - **Daily vault limit** — `AgentVault` contract enforces $1,000/day withdrawal ceiling on-chain
 - **Slippage guard** — market entry accepts minimum 95% of quoted token output
-- **Dry-run mode** — `AGENT_DRY_RUN=true` by default; no real transactions until explicitly enabled
+- **Dry-run mode** — set `AGENT_DRY_RUN=true` to log actions without executing transactions
 
 ---
 
@@ -217,14 +240,13 @@ npm run build          # Build all packages (respects dependency order)
 npm run dev            # Start all packages in watch mode
 npm run lint           # Lint all packages
 npm run check-types    # Type-check all packages
-npm run clean          # Remove all dist/ directories
 ```
 
 Run a single package with `--filter`:
 
 ```bash
 npm run build -- --filter=@repo/agent
-npm run dev   -- --filter=@repo/planner
+npm run dev   -- --filter=web
 ```
 
 ---
