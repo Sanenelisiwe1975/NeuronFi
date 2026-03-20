@@ -145,9 +145,6 @@ function deriveCategory(question: string): string {
   return "Other";
 }
 
-// ── FIX 2: deterministic trend — no Math.random() ────────────────────────────
-// Original used Math.random(), causing sparklines to re-roll on every render
-// and cards to flicker. We seed from the market address instead.
 
 function deterministicTrend(seed: string, yesProb: number): number[] {
   let h = 0;
@@ -235,7 +232,6 @@ function MarketCard({ market, onClick }: { market: Market; onClick: () => void }
       onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 24px rgba(0,0,0,0.07)"; }}
       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ""; (e.currentTarget as HTMLDivElement).style.boxShadow = ""; }}
     >
-      {/* Top row: category + badges */}
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
         <span style={{ background: cat.bg, border: `1px solid ${cat.border}`, borderRadius: 99, padding: "2px 9px", fontSize: 10, color: cat.text, fontWeight: 600 }}>{market.category}</span>
         {market.hot && <span style={{ background: "#fdf0f0", border: "1px solid #f5d0d0", borderRadius: 99, padding: "2px 8px", fontSize: 10, color: "#c97070", fontWeight: 500 }}>🔥 Hot</span>}
@@ -251,12 +247,10 @@ function MarketCard({ market, onClick }: { market: Market; onClick: () => void }
         )}
       </div>
 
-      {/* Question */}
       <p style={{ fontSize: 14, fontWeight: 500, color: "#2a2020", lineHeight: 1.45, marginBottom: 16, fontFamily: "'DM Serif Display', Georgia, serif", flex: 1 }}>
         {market.title}
       </p>
 
-      {/* Big probability number */}
       <div style={{ display: "flex", alignItems: "flex-end", gap: 8, marginBottom: 12 }}>
         <span style={{ fontSize: 40, fontWeight: 700, fontFamily: "'DM Serif Display', Georgia, serif", color: market.yesProb >= 50 ? "#5f9a5f" : "#c97070", lineHeight: 1 }}>
           {market.yesProb}%
@@ -267,13 +261,11 @@ function MarketCard({ market, onClick }: { market: Market; onClick: () => void }
         </div>
       </div>
 
-      {/* Probability bar */}
       <div style={{ height: 5, borderRadius: 99, overflow: "hidden", display: "flex", marginBottom: 14, gap: 2 }}>
         <div style={{ width: `${market.yesProb}%`, background: "#9ec89e", transition: "width .4s ease" }} />
         <div style={{ flex: 1, background: "#e8a8a8" }} />
       </div>
 
-      {/* YES / NO price buttons */}
       <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
         <div style={{ flex: 1, background: "#f0f5f0", border: "1px solid #cde0cd", borderRadius: 10, padding: "8px 0", textAlign: "center" }}>
           <div style={{ fontSize: 10, color: "#5f9a5f", fontWeight: 600, marginBottom: 2 }}>YES</div>
@@ -285,7 +277,6 @@ function MarketCard({ market, onClick }: { market: Market; onClick: () => void }
         </div>
       </div>
 
-      {/* Footer: volume + closes */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontSize: 11, color: "#b8aeae" }}>Vol {market.volume}</span>
         <span style={{ fontSize: 11, color: "#b8aeae" }}>Closes {market.closes}</span>
@@ -528,16 +519,13 @@ export default function PredictionMarketsPage() {
         .place-btn:hover { opacity: .85; }
       `}</style>
 
-      {/* ── Header ── */}
       <header style={{ background: "#fff", borderBottom: "1px solid #ede8e8", padding: "0 32px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 30, height: 30, borderRadius: 9, background: "#f3f0fb", border: "1px solid #ddd5f5", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <circle cx="7" cy="7" r="5.5" stroke="#b9a8e8" strokeWidth="1.5" />
-              <polyline points="4,9 6,6 8,7.5 10,4" stroke="#b9a8e8" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <span style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: 17, color: "#2a2020", letterSpacing: "-.2px" }}>Autonomous DeFi Agent</span>
+          <span style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: 17, color: "#2a2020", letterSpacing: "-.2px" }}> NeuronFi</span>
           {agentState && <span style={{ fontSize: 11, color: "#c4b8b8" }}>#{agentState.iteration} · {agentState.network}</span>}
         </div>
 
