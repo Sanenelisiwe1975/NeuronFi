@@ -318,6 +318,61 @@ async function executeBridgeUsdt0(
 /**
  * Executes all approved actions from the Decide phase using the WDK wallet.
  *
+async function executeCreateMarket(
+  account: WalletAccountEvm,
+  action: CreateMarketAction,
+  dryRun: boolean,
+  rpcUrl: string
+): Promise<ExecutionResult> {
+  const base: Omit<ExecutionResult, "success" | "txHash" | "feeWei" | "error" | "skipped"> = {
+    actionId: action.id,
+    actionType: "CREATE_MARKET" as AgentAction["type"],
+    executedAt: new Date().toISOString(),
+  };
+
+  const seedUsdt = (Number(action.seedYesMicroUsdt) + Number(action.seedNoMicroUsdt)) / 1e6;
+  console.log(`  → CREATE_MARKET "${action.question.slice(0, 60)}…" | seed: $${seedUsdt.toFixed(2)} | closes: ${new Date(action.closingTimestamp * 1000).toISOString()}`);
+
+  if (dryRun) return { ...base, success: true, skipped: true, skipReason: "DRY_RUN" };
+
+  try {
+    const signer       = await getEthersSigner(account, rpcUrl);
+    const agentAddress = await account.getAddress();
+    const factoryAddr  = process.env["MARKET_FACTORY_ADDRESS"]!;
+    const usdtAddr     = process.env["USDT_CONTRACT_ADDRESS"]!;
+
+    const FACTORY_ABI = [
+      "function createMarket(string calldata question_, uint256 closingTime_, uint256 initialYesUsdt, uint256 initialNoUsdt) external returns (address market)",
+    ];
+
+    const totalSeed = action.seedYesMicroUsdt + action.seedNoMicroUsdt;
+
+    if (totalSeed > 0n) {
+      const usdt = new ethers.Contract(usdtAddr, ERC20_ABI, signer) as any;
+      const approveTx = await usdt.approve(factoryAddr, totalSeed);
+      await approveTx.wait();
+    }
+
+    const factory = new ethers.Contract(factoryAddr, FACTORY_ABI, signer) as any;
+    const tx = await factory.createMarket(
+      action.question,
+      action.closingTimestamp,
+      action.seedYesMicroUsdt,
+      action.seedNoMicroUsdt
+    );
+    const receipt = await tx.wait();
+    const feeWei = receipt.gasUsed * receipt.gasPrice;
+
+    console.log(`    ✓ Market created | TX: ${tx.hash} | creator: ${agentAddress}`);
+    return { ...base, success: true, txHash: tx.hash, feeWei, skipped: false };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : String(err);
+    console.error(`    ✗ CREATE_MARKET failed: ${error.slice(0, 120)}`);
+    return { ...base, success: false, error, skipped: false };
+  }
+}
+
+/**
  * @param decision - DecisionResult from the Decide phase
  * @param account  - WDK wallet account (signs all transactions)
  * @param dryRun   - If true, logs all actions but submits no transactions
@@ -357,6 +412,9 @@ export async function execute(
         break;
       case "BRIDGE_USDT0":
         result = await executeBridgeUsdt0(account, action as BridgeUsdt0Action, dryRun);
+        break;
+      case "CREATE_MARKET":
+        result = await executeCreateMarket(account, action as CreateMarketAction, dryRun, rpcUrl);
         break;
       default: {
         const _exhaustive: never = action;
