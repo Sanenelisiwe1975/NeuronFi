@@ -28,6 +28,7 @@ import type {
   ExitMarketAction,
   RebalanceAction,
   BridgeUsdt0Action,
+  CreateMarketAction,
 } from "@repo/planner";
 import type { DecisionResult } from "./decide.js";
 import { ethers } from "ethers";
