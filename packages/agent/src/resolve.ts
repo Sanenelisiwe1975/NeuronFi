@@ -19,7 +19,7 @@
  */
 
 import { ethers } from "ethers";
-import { getEthersSigner, fetchActiveMarkets } from "./contracts.js";
+import { getEthersSigner, fetchActiveMarkets, CONDITIONAL_PAYMENT_ABI } from "./contracts.js";
 
 
 export const MARKET_RESOLVER_ABI = [
