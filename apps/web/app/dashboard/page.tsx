@@ -809,7 +809,7 @@ export default function PredictionMarketsPage() {
           <div className="layout-portfolio">
             <div>
               {/* Summary */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
+              <div className="portfolio-summary">
                 {[
                   { label: "Portfolio value", val: portfolioVal, sub: "total mark-to-market", color: "#7b62c9", bg: "#f3f0fb", border: "#ddd5f5" },
                   { label: "USD₮ balance",    val: usdtBal,      sub: "agent wallet",        color: "#5f9a5f", bg: "#f0f5f0", border: "#cde0cd" },
@@ -834,7 +834,7 @@ export default function PredictionMarketsPage() {
                 <div style={{ background: "#fff", border: "1px solid #ede8e8", borderRadius: 16, padding: "22px" }}>
                   <p style={{ fontFamily: "'DM Serif Display', serif", fontSize: 16, marginBottom: 4 }}>Latest snapshot</p>
                   <p style={{ fontSize: 11, color: "#c4b8b8", marginBottom: 16 }}>{new Date(latestSnap.snapshotAt).toLocaleString()}</p>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div className="snapshot-grid">
                     {[
                       { label: "ETH balance", val: `${latestSnap.ethBalance} ETH` },
                       { label: "USD₮",        val: `$${latestSnap.usdtBalance}` },
