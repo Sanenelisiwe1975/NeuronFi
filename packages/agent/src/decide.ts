@@ -117,6 +117,11 @@ export function decide(
     if (action.type === "ENTER_MARKET") {
       const enterAction = action as EnterMarketAction;
 
+      if (signals.openPositionMarketIds.has(enterAction.marketId)) {
+        rejected.push({ action, reason: `Already holding position in market ${enterAction.marketId}` });
+        continue;
+      }
+
       const rawEv = calculateRawEV(enterAction);
       const gasCostUsd = estimateOperationCostUsd(
         signals.gas,
