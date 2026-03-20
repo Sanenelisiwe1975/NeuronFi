@@ -231,15 +231,14 @@ export async function observe(
   const prices = await fetchPrices(rpcUrl, network);
   const ethPriceUsd = prices.eth.priceUsd || 3000;
 
-  const agentAddress = portfolio.address;
-
-  const [gas, usdtEthLiquidity, opportunities] = await Promise.all([
+  const [gas, portfolio, usdtEthLiquidity, opportunities] = await Promise.all([
     fetchGasSnapshot(rpcUrl, ethPriceUsd),
+    getPortfolioSnapshot(account, BigInt(Math.round(prices.xau.priceUsd * 1e6))),
     fetchUsdtEthLiquidity(rpcUrl, network, ethPriceUsd),
     discoverOpportunities(prices, rpcUrl),
   ]);
 
-  const openPositionMarketIds = await fetchOpenPositionMarketIds(rpcUrl, agentAddress);
+  const openPositionMarketIds = await fetchOpenPositionMarketIds(rpcUrl, portfolio.address);
 
   const riskGatesTriggered = checkRiskGates(prices, gas);
 
