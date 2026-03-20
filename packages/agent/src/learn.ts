@@ -46,6 +46,72 @@ async function writeJsonLog(outcome: LoopOutcome): Promise<void> {
 }
 
 
+const REDIS_PENDING_KEY = "agent:pending_outcomes";
+
+async function flushPendingToPostgres(client: import("pg").Client): Promise<void> {
+  const redisUrl = process.env["REDIS_URL"];
+  if (!redisUrl) return;
+  try {
+    const { createClient } = await import("redis" as string) as { createClient: typeof import("redis")["createClient"] };
+    const redis = createClient({ url: redisUrl });
+    await redis.connect();
+    try {
+      let raw: string | null;
+      while ((raw = await redis.lPop(REDIS_PENDING_KEY)) !== null) {
+        const buffered = JSON.parse(raw) as LoopOutcome;
+        await persistOutcomeToClient(client, buffered);
+        console.log(`[LEARN] Flushed buffered outcome #${buffered.iteration} to Postgres`);
+      }
+    } finally {
+      await redis.disconnect();
+    }
+  } catch { /* flush is best-effort */ }
+}
+
+async function bufferToRedis(outcome: LoopOutcome): Promise<void> {
+  const redisUrl = process.env["REDIS_URL"];
+  if (!redisUrl) return;
+  try {
+    const { createClient } = await import("redis" as string) as { createClient: typeof import("redis")["createClient"] };
+    const redis = createClient({ url: redisUrl });
+    await redis.connect();
+    const serialize = (o: unknown): string => JSON.stringify(o, (_k, v) => (typeof v === "bigint" ? v.toString() : v));
+    await redis.rPush(REDIS_PENDING_KEY, serialize(outcome));
+    await redis.disconnect();
+    console.warn(`[LEARN] Postgres unavailable — buffered outcome #${outcome.iteration} to Redis`);
+  } catch { /* silent */ }
+}
+
+async function persistOutcomeToClient(client: import("pg").Client, outcome: LoopOutcome): Promise<void> {
+  const serialize = (obj: unknown): string =>
+    JSON.stringify(obj, (_k, v) => (typeof v === "bigint" ? v.toString() : v));
+
+  const { rows } = await client.query<{ id: number }>(
+    `INSERT INTO loop_outcomes (iteration, network, duration_ms, signals, plan, decision, executions, portfolio)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     RETURNING id`,
+    [
+      outcome.iteration, outcome.network, outcome.durationMs,
+      serialize(outcome.signals), serialize(outcome.plan),
+      serialize(outcome.decision), serialize(outcome.executions),
+      serialize(outcome.portfolio),
+    ]
+  );
+  const outcomeId = rows[0]?.id;
+  for (const exec of outcome.executions) {
+    await client.query(
+      `INSERT INTO trades (loop_outcome_id, action_type, tx_hash, fee_wei, success, error, executed_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [outcomeId, exec.actionType, exec.txHash ?? null, exec.feeWei?.toString() ?? null, exec.success, exec.error ?? null, exec.executedAt]
+    );
+  }
+  await client.query(
+    `INSERT INTO portfolio_snapshots (address, eth_wei, usdt_micro, xaut_micro, total_usdt)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [outcome.portfolio.address, outcome.portfolio.ethWei.toString(), outcome.portfolio.usdtMicro.toString(), outcome.portfolio.xautMicro.toString(), outcome.portfolio.totalValueUsdt.toString()]
+  );
+}
+
 async function writeToPostgres(outcome: LoopOutcome): Promise<void> {
   const databaseUrl = process.env["DATABASE_URL"];
   if (!databaseUrl) return;
