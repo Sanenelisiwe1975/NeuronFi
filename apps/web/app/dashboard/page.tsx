@@ -910,7 +910,7 @@ export default function PredictionMarketsPage() {
 
         {/* ── Agent Tab ── */}
         {activeTab === "agent" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          <div className="layout-agent">
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {/* Config */}
               <div style={{ background: "#fff", border: "1px solid #ede8e8", borderRadius: 16, padding: "22px" }}>
