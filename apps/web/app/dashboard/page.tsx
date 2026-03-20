@@ -469,7 +469,7 @@ export default function PredictionMarketsPage() {
     setSubscribing(planId);
     try {
       const { ethers } = await import("ethers");
-      const provider = new ethers.BrowserProvider(eth as Parameters<typeof ethers.BrowserProvider>[0]);
+      const provider = new ethers.BrowserProvider(eth as any);
       const signer = await provider.getSigner();
 
       if (priceMicro > 0n) {
