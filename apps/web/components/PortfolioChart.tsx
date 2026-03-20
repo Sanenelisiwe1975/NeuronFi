@@ -62,7 +62,6 @@ function EmptyState() {
       border: "1px dashed #1e1e1e",
       borderRadius: 4,
     }}>
-      {/* Mini decorative chart lines */}
       <svg width="48" height="28" viewBox="0 0 48 28" fill="none">
         <polyline points="0,24 10,18 20,22 30,10 40,14 48,6" stroke="#2a2a2a" strokeWidth="1.5" strokeLinejoin="round" />
         <polyline points="0,24 10,18 20,22 30,10 40,14 48,6" stroke="#c8b56020" strokeWidth="1.5" strokeLinejoin="round" />

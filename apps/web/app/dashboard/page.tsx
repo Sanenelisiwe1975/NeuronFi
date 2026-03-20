@@ -638,7 +638,7 @@ export default function PredictionMarketsPage() {
                 </div>
               </div>
 
-              {/* Market grid */}
+
               {filtered.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "48px 0", color: "#c4b8b8" }}>
                   <p style={{ fontSize: 32, marginBottom: 12 }}>🔍</p>
@@ -658,7 +658,7 @@ export default function PredictionMarketsPage() {
               )}
             </div>
 
-            {/* Right panel */}
+
             <div style={{ position: "sticky", top: 80 }}>
               {selected ? (
                 <div style={{ background: "#fff", border: "1px solid #ede8e8", borderRadius: 16, padding: "22px", animation: "fadeUp .2s ease" }}>
