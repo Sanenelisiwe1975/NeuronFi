@@ -333,7 +333,7 @@ async function executeCreateMarket(
   if (dryRun) return { ...base, success: true, skipped: true, skipReason: "DRY_RUN" };
 
   try {
-    const signer       = await getEthersSigner(account, rpcUrl);
+    const signer       = getEthersSigner(rpcUrl);
     const agentAddress = await account.getAddress();
     const factoryAddr  = process.env["MARKET_FACTORY_ADDRESS"]!;
     const usdtAddr     = process.env["USDT_CONTRACT_ADDRESS"]!;
@@ -358,7 +358,7 @@ async function executeCreateMarket(
       action.seedNoMicroUsdt
     );
     const receipt = await tx.wait();
-    const feeWei = receipt.gasUsed * receipt.gasPrice;
+    const feeWei = BigInt(receipt.gasUsed) * BigInt(receipt.gasPrice);
 
     console.log(`    ✓ Market created | TX: ${tx.hash} | creator: ${agentAddress}`);
     return { ...base, success: true, txHash: tx.hash, feeWei, skipped: false };
