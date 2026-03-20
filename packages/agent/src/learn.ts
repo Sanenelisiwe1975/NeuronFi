@@ -122,59 +122,14 @@ async function writeToPostgres(outcome: LoopOutcome): Promise<void> {
     await client.connect();
 
     try {
-      const serialize = (obj: unknown): string =>
-        JSON.stringify(obj, (_k, v) => (typeof v === "bigint" ? v.toString() : v));
-
-      const { rows } = await client.query<{ id: number }>(
-        `INSERT INTO loop_outcomes (iteration, network, duration_ms, signals, plan, decision, executions, portfolio)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING id`,
-        [
-          outcome.iteration,
-          outcome.network,
-          outcome.durationMs,
-          serialize(outcome.signals),
-          serialize(outcome.plan),
-          serialize(outcome.decision),
-          serialize(outcome.executions),
-          serialize(outcome.portfolio),
-        ]
-      );
-
-      const outcomeId = rows[0]?.id;
-
-      for (const exec of outcome.executions) {
-        await client.query(
-          `INSERT INTO trades (loop_outcome_id, action_type, tx_hash, fee_wei, success, error, executed_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [
-            outcomeId,
-            exec.actionType,
-            exec.txHash ?? null,
-            exec.feeWei?.toString() ?? null,
-            exec.success,
-            exec.error ?? null,
-            exec.executedAt,
-          ]
-        );
-      }
-
-      await client.query(
-        `INSERT INTO portfolio_snapshots (address, eth_wei, usdt_micro, xaut_micro, total_usdt)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [
-          outcome.portfolio.address,
-          outcome.portfolio.ethWei.toString(),
-          outcome.portfolio.usdtMicro.toString(),
-          outcome.portfolio.xautMicro.toString(),
-          outcome.portfolio.totalValueUsdt.toString(),
-        ]
-      );
+      await flushPendingToPostgres(client);
+      await persistOutcomeToClient(client, outcome);
     } finally {
       await client.end();
     }
   } catch (err) {
     console.warn("[LEARN] PostgreSQL write failed:", err instanceof Error ? err.message : err);
+    await bufferToRedis(outcome);
   }
 }
 
