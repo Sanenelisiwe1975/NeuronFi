@@ -93,11 +93,6 @@ contract AgentVault is Ownable, ReentrancyGuard {
         emit AgentWithdraw(address(usdt), amount, to);
     }
 
-    /**
-     * @notice Agent withdraws XAU₮ for rebalancing (no daily limit — XAU₮ is reserve).
-     * @param amount Amount in micro-XAUT (6 decimals).
-     * @param to     Recipient.
-     */
     function agentWithdrawXaut(uint256 amount, address to)
         external
         onlyAgent
@@ -108,9 +103,6 @@ contract AgentVault is Ownable, ReentrancyGuard {
         emit AgentWithdraw(address(xaut), amount, to);
     }
 
-    /**
-     * @notice Emergency: owner withdraws any token.
-     */
     function ownerWithdraw(address token, uint256 amount, address to)
         external
         onlyOwner
@@ -120,18 +112,12 @@ contract AgentVault is Ownable, ReentrancyGuard {
         emit OwnerWithdraw(token, amount, to);
     }
 
-    /**
-     * @notice Update the authorised agent address.
-     */
     function setAgent(address newAgent) external onlyOwner {
         if (newAgent == address(0)) revert ZeroAddress();
         emit AgentUpdated(agent, newAgent);
         agent = newAgent;
     }
 
-    /**
-     * @notice Update the daily withdrawal limit.
-     */
     function setDailyLimit(uint256 newLimit) external onlyOwner {
         emit DailyLimitUpdated(dailyLimitUsdt, newLimit);
         dailyLimitUsdt = newLimit;

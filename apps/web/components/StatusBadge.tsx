@@ -59,7 +59,6 @@ export function StatusBadge({ status }: Props) {
         }} />
       </span>
 
-      {/* Glyph */}
       <span style={{
         fontSize: 8,
         color: conf.color,
