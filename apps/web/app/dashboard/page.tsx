@@ -633,10 +633,10 @@ export default function PredictionMarketsPage() {
 
         {/* ── Markets Tab ── */}
         {activeTab === "markets" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 24, alignItems: "start" }}>
+          <div className="layout-markets">
             <div>
               {/* KPI strip */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginBottom: 24 }}>
+              <div className="kpi-grid">
                 {[
                   { label: "Markets",     value: String(markets.length),    sub: liveMarkets.length > 0 ? "on-chain" : "demo", accent: "#b9a8e8", bg: "#f3f0fb", border: "#ddd5f5" },
                   { label: "Volume",      value: liveMarkets.length > 0 ? `$${(liveMarkets.reduce((s, m) => s + Number(m.volumeUsdt), 0) / 1000).toFixed(0)}K` : "$13.7M", sub: "USD₮ deposited", accent: "#9ec89e", bg: "#f0f5f0", border: "#cde0cd" },
@@ -697,7 +697,7 @@ export default function PredictionMarketsPage() {
                   <p style={{ fontSize: 12, marginTop: 6 }}>Try a different search or clear the filter</p>
                 </div>
               ) : (
-                <div className="card-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div className="card-grid market-grid">
                   {filtered.map(m => (
                     <MarketCard key={String(m.id)} market={m} onClick={() => setSelected(selected?.id === m.id ? null : m)} />
                   ))}
@@ -806,7 +806,7 @@ export default function PredictionMarketsPage() {
 
         {/* ── Portfolio Tab ── */}
         {activeTab === "portfolio" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 24, alignItems: "start" }}>
+          <div className="layout-portfolio">
             <div>
               {/* Summary */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
