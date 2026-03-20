@@ -16,17 +16,17 @@ Built for the **Tether Hackathon Galáctica: WDK Edition 1** — Track: **Autono
 │    │          │        │        │          │         │               │
 │  Prices    Claude    EV +     WDK +     AI Oracle  Postgres          │
 │  Gas       Sonnet    Risk     Contracts  on-chain   Redis            │
-│  Vault     Plan      Gates    + Cond.    rationale  JSON log         │
-│  Markets           Payment  escrow                                   │
+│  Vault     Plan      Gates    + Cond.    rationale  write-ahead      │
+│  Markets           Payment  escrow                  buffer           │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-1. **Observe** — fetches ETH/USDT/XAUT prices (Chainlink + CoinGecko fallback), gas snapshot, Uniswap V3 liquidity, and active prediction market opportunities. Auto-tops-up agent USDT from `AgentVault` if balance drops below $50.
-2. **Reason** — sends the full market state to Claude Sonnet 4.6 via LangChain.js; receives a ranked list of `AgentAction` objects (OpenClaw-style planning engine).
-3. **Decide** — applies global risk gates (USDT depeg halt, gas congestion halt) and per-action filters (min EV > 2%, max position size 5%, risk score ≤ 70).
-4. **Execute** — routes approved actions via the Tether WDK (`transferUSDT`, `transferXAUT`) and direct Solidity calls (`enterPosition`, `redeem`). After each market entry, locks a 1% performance fee in `ConditionalPayment` — released to treasury only if the prediction is correct.
+1. **Observe** — fetches ETH/USDT/XAUT prices (Chainlink per-feed with CoinGecko fallback), gas snapshot, Uniswap V3 liquidity, and active prediction market opportunities from `MarketFactory`. Auto-tops-up agent USDT from `AgentVault` if balance drops below $50. Tracks open positions to prevent double-entry.
+2. **Reason** — sends the full market state to Claude Sonnet 4.6 via LangChain.js; receives a ranked list of `AgentAction` objects (OpenClaw planning engine). Supports `ENTER_MARKET`, `EXIT_MARKET`, `REBALANCE`, `CREATE_MARKET`, and `HOLD` actions.
+3. **Decide** — applies global risk gates (USDT depeg halt, gas congestion halt) and per-action filters (min EV > 2%, max position size 5%, risk score ≤ 70, no double-entry on open positions).
+4. **Execute** — routes approved actions via the Tether WDK (`transferUSDT`, `transferXAUT`) and direct Solidity calls (`enterPosition`, `redeem`, `createMarket`). After each market entry, locks a 1% performance fee in `ConditionalPayment` — released to treasury only if the prediction is correct.
 5. **Resolve** — after a market closes, the agent fetches the Chainlink price, compares it to the question threshold, calls `MarketResolver.aiResolve()` with a full rationale stored permanently on-chain, then finalises after the 24-hour dispute window.
-6. **Learn** — persists cycle outcomes to PostgreSQL and Redis; updates Bayesian priors (Beta distribution EMA) per action type.
+6. **Learn** — persists cycle outcomes to PostgreSQL and Redis; updates Bayesian priors (Beta distribution EMA) per action type. Failed Postgres writes are buffered in Redis and flushed on reconnect.
 
 ---
 
@@ -35,7 +35,7 @@ Built for the **Tether Hackathon Galáctica: WDK Edition 1** — Track: **Autono
 ```
 autonomous-defi-agent/
 ├── apps/
-│   └── web/                  # Next.js 16 real-time dashboard (Polymarket-style UI)
+│   └── web/                  # Next.js 14 real-time dashboard (Polymarket-style UI)
 ├── packages/
 │   ├── agent/                # Autonomous loop (observe→learn)
 │   ├── contracts/            # Solidity: AgentVault, PredictionMarket, MarketFactory,
@@ -61,7 +61,7 @@ autonomous-defi-agent/
 
 - Node.js 18+
 - Docker (for Postgres + Redis)
-- An Ethereum RPC endpoint (Alchemy or Infura)
+- An Ethereum RPC endpoint (Alchemy or Infura — Sepolia)
 - Anthropic API key
 
 ### 2. Install dependencies
@@ -98,14 +98,22 @@ npm run build
 
 ```bash
 cd packages/contracts
-node scripts/deploy.mjs              # AgentVault + MarketFactory
-node scripts/set-vault-agent.mjs     # authorises WDK wallet on AgentVault
-node scripts/deploy-resolver.mjs     # MarketResolver + first PredictionMarket
-node scripts/deploy-conditional.mjs  # ConditionalPayment + IMarket-compatible market
-node scripts/deploy-subscription.mjs # SubscriptionManager (4 USDT tiers)
+
+# Deploy core contracts (requires Hardhat — or use already-deployed addresses below)
+npx hardhat run scripts/deploy.ts --network sepolia   # AgentVault + MarketFactory
+
+# One-time setup scripts (run after deploy)
+node scripts/set-vault-agent.mjs       # authorise WDK wallet on AgentVault
+node scripts/deploy-resolver.mjs       # MarketResolver + wires Chainlink feed
+node scripts/deploy-conditional.mjs    # ConditionalPayment + IMarket-compatible market
+node scripts/deploy-subscription.mjs   # SubscriptionManager (4 USDT tiers)
+node scripts/set-permissionless.mjs    # allow agent wallet to create markets
+node scripts/seed-markets.mjs          # deploy 10 diverse starter markets (Crypto/Macro/DeFi/Politics/Science)
 ```
 
 Copy the printed addresses into `packages/agent/.env` and `apps/web/.env.local`.
+
+> **Already deployed on Sepolia** — see the contracts table below. You can skip the Hardhat deploy and use those addresses directly.
 
 ### 7. Run the agent
 
@@ -152,6 +160,8 @@ Set all env vars from `apps/web/.env.example` in the Vercel dashboard before dep
 | `SUBSCRIPTION_MANAGER_ADDRESS` | Yes | Deployed SubscriptionManager address |
 | `TREASURY_ADDRESS` | Yes | Performance fee recipient address |
 | `AGENT_DRY_RUN` | No | `true` = log only, no real txs (default: `false`) |
+| `LLM_MODEL` | No | Claude model ID (default: `claude-sonnet-4-6`) |
+| `LLM_TEMPERATURE` | No | LLM temperature 0–1 (default: `0.2`) |
 | `USDT0_BRIDGE_ENABLED` | No | `true` = enable LayerZero USDT0 cross-chain bridging |
 
 ### Dashboard (`apps/web/.env.local`)
@@ -169,6 +179,20 @@ Set all env vars from `apps/web/.env.example` in the Vercel dashboard before dep
 | `SUBSCRIPTION_MANAGER_ADDRESS` | Subscription tier queries |
 | `TREASURY_ADDRESS` | Treasury address |
 
+### Contracts scripts (`packages/contracts/.env`)
+
+| Variable | Description |
+|---|---|
+| `RPC_URL` | Ethereum JSON-RPC endpoint |
+| `DEPLOYER_PRIVATE_KEY` | Deployer EOA private key |
+| `USDT_CONTRACT_ADDRESS` | USD₮ ERC-20 address |
+| `MARKET_FACTORY_ADDRESS` | MarketFactory address |
+| `AGENT_VAULT_ADDRESS` | AgentVault address |
+| `MARKET_RESOLVER_ADDRESS` | MarketResolver address |
+| `CONDITIONAL_PAYMENT_ADDRESS` | ConditionalPayment address |
+| `SUBSCRIPTION_MANAGER_ADDRESS` | SubscriptionManager address |
+| `TREASURY_ADDRESS` | Treasury / deployer address |
+
 ---
 
 ## Smart Contracts (Sepolia Testnet)
@@ -176,12 +200,14 @@ Set all env vars from `apps/web/.env.example` in the Vercel dashboard before dep
 | Contract | Address | Purpose |
 |---|---|---|
 | `AgentVault` | `0x824a901E3609C5d8D6F874b31Fe736364190119D` | Holds USD₮; enforces $1,000/day agent withdrawal limit |
-| `MarketFactory` | `0x3947C99650879990cB2c0C0cbB22FE71e5CF11f9` | Creates and registers PredictionMarket instances |
-| `PredictionMarket` | `0x42AeA76AC295A5903985EEF2dC7b875F8561A9f5` | Binary AMM — YES/NO outcome token market |
-| `PredictionMarket` | `0x6A58ee4901670b915Ca085db5A5d6e508d6400e5` | Second active market (IMarket-compatible) |
+| `MarketFactory` | `0x3947C99650879990cB2c0C0cbB22FE71e5CF11f9` | Creates and registers PredictionMarket instances; permissionless mode enabled |
 | `MarketResolver` | `0x8e50025719b9f605C11Eb43c1683C9536eAdc8B0` | Multi-path resolution: AI oracle, Chainlink, UMA, multisig |
 | `ConditionalPayment` | `0xC53a881F97fa5AFFf966A150dD6A7151fACcb7f3` | Outcome-linked USDT escrow — fee released only on correct prediction |
 | `SubscriptionManager` | `0xdD8Ac6Aff3D034e9BEC91482140F3C3792D5148B` | On-chain subscription tiers paid in USDT (FREE/$0, BASIC/$29, PRO/$99, INSTITUTIONAL/$499) |
+| Agent wallet (WDK) | `0xd4f54bB98BA78a813c82C78934191cBba3C33900` | Autonomous trading wallet managed by Tether WDK |
+| Deployer / Treasury | `0xF60ab179Fe7ECdc1320b375b7185302ee23c4888` | Contract owner and performance fee recipient |
+
+> Individual `PredictionMarket` contracts are deployed dynamically by the agent via `MarketFactory.createMarket()`. Query `factory.getActiveMarkets()` for the current list.
 
 ---
 
@@ -192,12 +218,12 @@ Set all env vars from `apps/web/.env.example` in the Vercel dashboard before dep
 | Wallet | Tether WDK (`@tetherto/wdk-wallet-evm`) |
 | Cross-chain bridge | USDT0 LayerZero OFT (`@tetherto/wdk-protocol-bridge-usdt0-evm`) |
 | AI Planning | LangChain.js + Claude Sonnet 4.6 (`@langchain/anthropic`) |
-| Price Feeds | Chainlink AggregatorV3 + CoinGecko REST API (fallback) |
+| Price Feeds | Chainlink AggregatorV3 (per-feed) + CoinGecko REST API (per-feed fallback) |
 | DEX Data | Uniswap V3 pool queries via ethers.js |
 | Smart Contracts | Solidity 0.8 + Hardhat |
-| Dashboard | Next.js 16 App Router + Recharts + MetaMask wallet connect |
+| Dashboard | Next.js 14 App Router + Recharts + MetaMask wallet connect |
 | Database | PostgreSQL 16 |
-| Cache / PubSub | Redis 7 |
+| Cache / Lock | Redis 7 (distributed lock + write-ahead buffer) |
 | Monorepo | Turborepo + npm workspaces |
 | Deployment | Vercel (dashboard) + Docker Compose (infra) |
 | Language | TypeScript ESM throughout |
@@ -210,7 +236,7 @@ The dashboard is a Polymarket-style real-time UI visible at `/dashboard`:
 
 - **Market cards** — probability hero number, YES/NO price display, days-left countdown, agent position badge, sparkline trend
 - **Search + sort** — filter by keyword, sort by volume / closing soon / probability / trending
-- **Category pills** — Crypto, Macro, Politics, Science, Sports
+- **Category pills** — All, Crypto, Macro, Politics, Science, Sports, Other (auto-inferred from question text)
 - **KPI strip** — live markets count, total volume, resolutions, agent win rate, P&L
 - **Wallet connect** — MetaMask integration; shows connected address and active subscription plan
 - **Subscribe** — buy a BASIC/PRO/INSTITUTIONAL subscription directly from the UI (USDT approval + on-chain tx)
@@ -224,11 +250,13 @@ The dashboard is a Polymarket-style real-time UI visible at `/dashboard`:
 
 - **USDT depeg halt** — all execution suspended if USDT price deviates >0.5% from $1.00
 - **Gas congestion halt** — all execution suspended if base fee >100 gwei
-- **EV threshold** — ENTER_MARKET rejected if net expected value <2% (after gas costs)
+- **EV threshold** — `ENTER_MARKET` rejected if net expected value <2% (after gas costs)
 - **Risk score filter** — rejects positions with probability uncertainty + payout ratio risk >70/100
 - **Position cap** — individual positions clamped to 5% of total portfolio
+- **Double-entry guard** — agent checks open positions each cycle; will not re-enter a market it already holds
 - **Daily vault limit** — `AgentVault` contract enforces $1,000/day withdrawal ceiling on-chain
 - **Slippage guard** — market entry accepts minimum 95% of quoted token output
+- **Distributed lock** — Redis `SET NX` prevents two agent instances running simultaneously
 - **Dry-run mode** — set `AGENT_DRY_RUN=true` to log actions without executing transactions
 
 ---
