@@ -60,9 +60,10 @@ autonomous-defi-agent/
 ### 1. Prerequisites
 
 - Node.js 18+
-- Docker (for Postgres + Redis)
 - An Ethereum RPC endpoint (Alchemy or Infura — Sepolia)
 - Anthropic API key
+- [Neon](https://neon.tech) account (free tier — cloud Postgres)
+- [Upstash](https://upstash.com) account (free tier — cloud Redis)
 
 ### 2. Install dependencies
 
@@ -82,11 +83,16 @@ cp apps/web/.env.example apps/web/.env.local
 # Fill in: RPC_URL, contract addresses
 ```
 
-### 4. Start infrastructure
+### 4. Set up cloud infrastructure
 
+Create a free [Neon](https://neon.tech) Postgres database and a free [Upstash](https://upstash.com) Redis instance. Copy their connection strings into `packages/agent/.env` (`DATABASE_URL`, `REDIS_URL`) and `apps/web/.env.local`.
+
+Apply the database schema:
 ```bash
-docker compose -f infra/docker-compose.yml up -d
+# Paste contents of infra/init.sql into the Neon SQL editor
 ```
+
+> No Docker needed — Neon and Upstash provide managed cloud Postgres and Redis.
 
 ### 5. Build all packages
 
@@ -119,7 +125,9 @@ Copy the printed addresses into `packages/agent/.env` and `apps/web/.env.local`.
 
 ```bash
 cd packages/agent
-node --env-file=.env dist/index.js
+npm run dev        # development (tsx watch, no build needed)
+# or
+npm run build && npm run start   # production
 ```
 
 ### 8. Open the dashboard
@@ -132,11 +140,14 @@ npm run dev
 
 ### 9. Deploy dashboard to Vercel (optional)
 
-```bash
-npx vercel --prod
-```
+Connect the GitHub repo to [Vercel](https://vercel.com). Set:
+- **Root Directory**: *(blank — repo root)*
+- **Build Command**: `npx turbo run build --filter=web`
+- **Output Directory**: `apps/web/.next`
 
-Set all env vars from `apps/web/.env.example` in the Vercel dashboard before deploying.
+Add all env vars from `apps/web/.env.local` in the Vercel dashboard → Settings → Environment Variables.
+
+**Live demo**: [autonomous-defi-agent.vercel.app](https://autonomous-defi-agent.vercel.app)
 
 ---
 
@@ -222,10 +233,10 @@ Set all env vars from `apps/web/.env.example` in the Vercel dashboard before dep
 | DEX Data | Uniswap V3 pool queries via ethers.js |
 | Smart Contracts | Solidity 0.8 + Hardhat |
 | Dashboard | Next.js 14 App Router + Recharts + MetaMask wallet connect |
-| Database | PostgreSQL 16 |
-| Cache / Lock | Redis 7 (distributed lock + write-ahead buffer) |
+| Database | PostgreSQL via [Neon](https://neon.tech) (serverless cloud) |
+| Cache / Lock | Redis via [Upstash](https://upstash.com) (distributed lock + write-ahead buffer) |
 | Monorepo | Turborepo + npm workspaces |
-| Deployment | Vercel (dashboard) + Docker Compose (infra) |
+| Deployment | Vercel (dashboard) + Neon + Upstash (cloud infra) |
 | Language | TypeScript ESM throughout |
 
 ---
