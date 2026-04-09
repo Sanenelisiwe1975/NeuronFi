@@ -118,7 +118,30 @@ export default function Home() {
 
       {/* Nav */}
       <nav style={{ maxWidth: 900, margin: "0 auto", padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 26, color: "#2a2020" }}>NeuronFi</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="9" cy="6" r="2" fill="#7b62c9"/>
+            <circle cx="15" cy="6" r="2" fill="#7b62c9"/>
+            <circle cx="6" cy="12" r="2" fill="#7b62c9"/>
+            <circle cx="12" cy="12" r="2" fill="#7b62c9"/>
+            <circle cx="18" cy="12" r="2" fill="#7b62c9"/>
+            <circle cx="9" cy="18" r="2" fill="#7b62c9"/>
+            <circle cx="15" cy="18" r="2" fill="#7b62c9"/>
+            <line x1="9" y1="6" x2="15" y2="6" stroke="#7b62c9" strokeWidth="1.2"/>
+            <line x1="9" y1="6" x2="6" y2="12" stroke="#7b62c9" strokeWidth="1.2"/>
+            <line x1="9" y1="6" x2="12" y2="12" stroke="#7b62c9" strokeWidth="1.2"/>
+            <line x1="15" y1="6" x2="12" y2="12" stroke="#7b62c9" strokeWidth="1.2"/>
+            <line x1="15" y1="6" x2="18" y2="12" stroke="#7b62c9" strokeWidth="1.2"/>
+            <line x1="6" y1="12" x2="9" y2="18" stroke="#7b62c9" strokeWidth="1.2"/>
+            <line x1="12" y1="12" x2="9" y2="18" stroke="#7b62c9" strokeWidth="1.2"/>
+            <line x1="12" y1="12" x2="15" y2="18" stroke="#7b62c9" strokeWidth="1.2"/>
+            <line x1="18" y1="12" x2="15" y2="18" stroke="#7b62c9" strokeWidth="1.2"/>
+            <line x1="6" y1="12" x2="12" y2="12" stroke="#7b62c9" strokeWidth="1.2"/>
+            <line x1="12" y1="12" x2="18" y2="12" stroke="#7b62c9" strokeWidth="1.2"/>
+            <line x1="9" y1="18" x2="15" y2="18" stroke="#7b62c9" strokeWidth="1.2"/>
+          </svg>
+          <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 26, color: "#2a2020" }}>NeuronFi</span>
+        </span>
         <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
           <a href="https://github.com/Sanenelisiwe1975/autonomous-defi-agent" target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: "#9a8e8e", fontWeight: 500 }}>GitHub</a>
           <Link href="/dashboard" className="btn-primary" style={{ padding: "9px 20px", fontSize: 13 }}>Dashboard →</Link>
