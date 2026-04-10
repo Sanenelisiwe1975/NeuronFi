@@ -1,8 +1,8 @@
-# Autonomous DeFi Agent
+# NeuronFi — Autonomous DeFi Agent
 
-An autonomous on-chain agent that continuously observes DeFi markets, reasons about opportunities using Claude (Anthropic), decides risk-adjusted positions, executes trades via the Tether WDK, and learns from every cycle — all without human intervention.
+An autonomous on-chain agent that continuously observes DeFi markets, reasons about opportunities using Claude (Anthropic), decides risk-adjusted positions, executes trades via the **Kite AI AA SDK**, attests decisions through the **Kite Attestation Registry**, and learns from every cycle — all without human intervention.
 
-Built for the **Tether Hackathon Galáctica: WDK Edition 1** — Track: **Autonomous DeFi Agent** + **Agent Wallets**.
+Built for the **Kite AI Hackathon** — Track: **Agentic Trading & Portfolio Management**.
 
 ---
 
@@ -14,18 +14,18 @@ Built for the **Tether Hackathon Galáctica: WDK Edition 1** — Track: **Autono
 │                                                                      │
 │  Observe → Reason → Decide → Execute → Resolve → Learn               │
 │    │          │        │        │          │         │               │
-│  Prices    Claude    EV +     WDK +     AI Oracle  Postgres          │
-│  Gas       Sonnet    Risk     Contracts  on-chain   Redis            │
-│  Vault     Plan      Gates    + Cond.    rationale  write-ahead      │
-│  Markets           Payment  escrow                  buffer           │
+│  Prices    Claude    EV +     Kite AA   Kite        Postgres          │
+│  Gas       Sonnet    Risk     SDK +     Attestation  Redis            │
+│  Vault     Plan      Gates    Contracts  Registry    write-ahead      │
+│  Markets           Payment  escrow     on-chain     buffer           │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-1. **Observe** — fetches ETH/USDT/XAUT prices (Chainlink per-feed with CoinGecko fallback), gas snapshot, Uniswap V3 liquidity, and active prediction market opportunities from `MarketFactory`. Auto-tops-up agent USDT from `AgentVault` if balance drops below $50. Tracks open positions to prevent double-entry.
+1. **Observe** — fetches ETH/USDC prices (Chainlink per-feed with CoinGecko fallback), gas snapshot, Uniswap V3 liquidity, and active prediction market opportunities from `MarketFactory`. Auto-tops-up agent USDC from `AgentVault` if balance drops below $50. Tracks open positions to prevent double-entry.
 2. **Reason** — sends the full market state to Claude Sonnet 4.6 via LangChain.js; receives a ranked list of `AgentAction` objects (OpenClaw planning engine). Supports `ENTER_MARKET`, `EXIT_MARKET`, `REBALANCE`, `CREATE_MARKET`, and `HOLD` actions.
-3. **Decide** — applies global risk gates (USDT depeg halt, gas congestion halt) and per-action filters (min EV > 2%, max position size 5%, risk score ≤ 70, no double-entry on open positions).
-4. **Execute** — routes approved actions via the Tether WDK (`transferUSDT`, `transferXAUT`) and direct Solidity calls (`enterPosition`, `redeem`, `createMarket`). After each market entry, locks a 1% performance fee in `ConditionalPayment` — released to treasury only if the prediction is correct.
-5. **Resolve** — after a market closes, the agent fetches the Chainlink price, compares it to the question threshold, calls `MarketResolver.aiResolve()` with a full rationale stored permanently on-chain, then finalises after the 24-hour dispute window.
+3. **Decide** — applies global risk gates (USDC depeg halt, gas congestion halt) and per-action filters (min EV > 2%, max position size 5%, risk score ≤ 70, no double-entry on open positions).
+4. **Execute** — routes approved actions via the **Kite AA SDK** (gasless USDC transfers) and direct Solidity calls (`enterPosition`, `redeem`, `createMarket`). After each market entry, locks a 1% performance fee in `ConditionalPayment` — released to treasury only if the prediction is correct.
+5. **Resolve** — after a market closes, the agent fetches the Chainlink price, calls `MarketResolver.aiResolve()` with a full rationale, then writes an **attestation to the Kite Attestation Registry** — making every AI decision permanently verifiable on-chain. Finalises after the 24-hour dispute window.
 6. **Learn** — persists cycle outcomes to PostgreSQL and Redis; updates Bayesian priors (Beta distribution EMA) per action type. Failed Postgres writes are buffered in Redis and flushed on reconnect.
 
 ---
@@ -33,7 +33,7 @@ Built for the **Tether Hackathon Galáctica: WDK Edition 1** — Track: **Autono
 ## Monorepo Structure
 
 ```
-autonomous-defi-agent/
+NeuronFi/
 ├── apps/
 │   └── web/                  # Next.js 14 real-time dashboard (Polymarket-style UI)
 ├── packages/
@@ -42,7 +42,7 @@ autonomous-defi-agent/
 │   │                         #   MarketResolver, ConditionalPayment, SubscriptionManager
 │   ├── data/                 # Oracle, Uniswap V3 liquidity, gas feeds
 │   ├── planner/              # LLM reasoning engine (LangChain.js + Claude Sonnet 4.6)
-│   ├── wdk/                  # Tether WDK wallet wrapper + USDT0 LayerZero bridge
+│   ├── kite/                 # Kite AA SDK wallet wrapper + Agent Passport + LayerZero bridge
 │   ├── ui/                   # Shared React components
 │   ├── eslint-config/        # Shared ESLint presets
 │   └── typescript-config/    # Shared tsconfig bases
@@ -60,7 +60,7 @@ autonomous-defi-agent/
 ### 1. Prerequisites
 
 - Node.js 18+
-- An Ethereum RPC endpoint (Alchemy or Infura — Sepolia)
+- A Kite chain RPC endpoint (from the [Kite Chain Network Getting Started](https://docs.kite.ai) guide)
 - Anthropic API key
 - [Neon](https://neon.tech) account (free tier — cloud Postgres)
 - [Upstash](https://upstash.com) account (free tier — cloud Redis)
@@ -76,11 +76,11 @@ npm install
 ```bash
 # Agent
 cp packages/agent/.env.example packages/agent/.env
-# Fill in: RPC_URL, AGENT_SEED_PHRASE, ANTHROPIC_API_KEY, contract addresses
+# Fill in: KITE_RPC_URL, KITE_CHAIN_ID, AGENT_PRIVATE_KEY, ANTHROPIC_API_KEY, contract addresses
 
 # Dashboard
 cp apps/web/.env.example apps/web/.env.local
-# Fill in: RPC_URL, contract addresses
+# Fill in: KITE_RPC_URL, contract addresses
 ```
 
 ### 4. Set up cloud infrastructure
@@ -100,28 +100,30 @@ Apply the database schema:
 npm run build
 ```
 
-### 6. Deploy contracts (Sepolia)
+### 6. Deploy contracts (Kite chain)
 
 ```bash
 cd packages/contracts
 
-# Deploy core contracts (requires Hardhat — or use already-deployed addresses below)
-npx hardhat run scripts/deploy.ts --network sepolia   # AgentVault + MarketFactory
+# Deploy core contracts to Kite
+npx hardhat run scripts/deploy.ts --network kite   # AgentVault + MarketFactory
 
 # One-time setup scripts (run after deploy)
-node scripts/set-vault-agent.mjs       # authorise WDK wallet on AgentVault
-node scripts/deploy-resolver.mjs       # MarketResolver + wires Chainlink feed
+node scripts/set-vault-agent.mjs       # authorise AA wallet on AgentVault
+node scripts/deploy-resolver.mjs       # MarketResolver + wires Chainlink feed + Kite Attestation Registry
 node scripts/deploy-conditional.mjs    # ConditionalPayment + IMarket-compatible market
-node scripts/deploy-subscription.mjs   # SubscriptionManager (4 USDT tiers)
+node scripts/deploy-subscription.mjs   # SubscriptionManager (4 USDC tiers)
 node scripts/set-permissionless.mjs    # allow agent wallet to create markets
 node scripts/seed-markets.mjs          # deploy 10 diverse starter markets (Crypto/Macro/DeFi/Politics/Science)
 ```
 
 Copy the printed addresses into `packages/agent/.env` and `apps/web/.env.local`.
 
-> **Already deployed on Sepolia** — see the contracts table below. You can skip the Hardhat deploy and use those addresses directly.
+### 7. Register the Agent Passport
 
-### 7. Run the agent
+The agent registers a Kite Agent Passport on first startup — giving it an on-chain identity traceable in the dashboard and explorer. No manual step needed; the agent handles this automatically before the first loop cycle.
+
+### 8. Run the agent
 
 ```bash
 cd packages/agent
@@ -130,7 +132,7 @@ npm run dev        # development (tsx watch, no build needed)
 npm run build && npm run start   # production
 ```
 
-### 8. Open the dashboard
+### 9. Open the dashboard
 
 ```bash
 cd apps/web
@@ -138,7 +140,7 @@ npm run dev
 # → http://localhost:3000/dashboard
 ```
 
-### 9. Deploy dashboard to Vercel (optional)
+### 10. Deploy dashboard to Vercel
 
 Connect the GitHub repo to [Vercel](https://vercel.com). Set:
 - **Root Directory**: *(blank — repo root)*
@@ -147,7 +149,7 @@ Connect the GitHub repo to [Vercel](https://vercel.com). Set:
 
 Add all env vars from `apps/web/.env.local` in the Vercel dashboard → Settings → Environment Variables.
 
-**Live demo**: [autonomous-defi-agent.vercel.app](https://autonomous-defi-agent.vercel.app)
+**Live demo**: [neuronfi.vercel.app](https://neuronfi.vercel.app)
 
 ---
 
@@ -157,13 +159,16 @@ Add all env vars from `apps/web/.env.local` in the Vercel dashboard → Settings
 
 | Variable | Required | Description |
 |---|---|---|
-| `RPC_URL` | Yes | Ethereum JSON-RPC endpoint |
-| `AGENT_SEED_PHRASE` | Yes | BIP-39 mnemonic — WDK wallet |
+| `KITE_RPC_URL` | Yes | Kite chain JSON-RPC endpoint |
+| `KITE_CHAIN_ID` | Yes | Kite chain ID |
+| `AGENT_PRIVATE_KEY` | Yes | Agent wallet private key (AA smart account owner) |
 | `ANTHROPIC_API_KEY` | Yes | Claude API key |
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `REDIS_URL` | Yes | Redis connection string |
-| `USDT_CONTRACT_ADDRESS` | Yes | USD₮ ERC-20 address |
-| `XAUT_CONTRACT_ADDRESS` | Yes | XAU₮ ERC-20 address |
+| `USDC_CONTRACT_ADDRESS` | Yes | USDC ERC-20 address on Kite |
+| `KITE_PAYMASTER_URL` | Yes | Kite gasless paymaster endpoint |
+| `KITE_ATTESTATION_REGISTRY` | Yes | Kite Attestation Registry contract address |
+| `KITE_AGENT_PASSPORT_ADDRESS` | Yes | Kite Agent Passport registry address |
 | `AGENT_VAULT_ADDRESS` | Yes | Deployed AgentVault address |
 | `MARKET_FACTORY_ADDRESS` | Yes | Deployed MarketFactory address |
 | `MARKET_RESOLVER_ADDRESS` | Yes | Deployed MarketResolver address |
@@ -173,30 +178,33 @@ Add all env vars from `apps/web/.env.local` in the Vercel dashboard → Settings
 | `AGENT_DRY_RUN` | No | `true` = log only, no real txs (default: `false`) |
 | `LLM_MODEL` | No | Claude model ID (default: `claude-sonnet-4-6`) |
 | `LLM_TEMPERATURE` | No | LLM temperature 0–1 (default: `0.2`) |
-| `USDT0_BRIDGE_ENABLED` | No | `true` = enable LayerZero USDT0 cross-chain bridging |
+| `LAYERZERO_BRIDGE_ENABLED` | No | `true` = enable cross-chain USDC bridging via LayerZero |
 
 ### Dashboard (`apps/web/.env.local`)
 
 | Variable | Description |
 |---|---|
-| `RPC_URL` | Ethereum JSON-RPC endpoint |
+| `KITE_RPC_URL` | Kite chain JSON-RPC endpoint |
 | `REDIS_URL` | Redis — reads live agent state |
 | `DATABASE_URL` | PostgreSQL — reads trade history |
 | `MARKET_FACTORY_ADDRESS` | Fetches active markets from chain |
 | `AGENT_VAULT_ADDRESS` | Reads vault balances |
-| `USDT_CONTRACT_ADDRESS` | Token balance queries |
+| `USDC_CONTRACT_ADDRESS` | Token balance queries |
 | `MARKET_RESOLVER_ADDRESS` | Resolution event queries |
 | `CONDITIONAL_PAYMENT_ADDRESS` | Escrow status queries |
 | `SUBSCRIPTION_MANAGER_ADDRESS` | Subscription tier queries |
+| `KITE_ATTESTATION_REGISTRY` | Attestation lookup for resolved markets |
 | `TREASURY_ADDRESS` | Treasury address |
 
 ### Contracts scripts (`packages/contracts/.env`)
 
 | Variable | Description |
 |---|---|
-| `RPC_URL` | Ethereum JSON-RPC endpoint |
+| `KITE_RPC_URL` | Kite chain JSON-RPC endpoint |
+| `KITE_CHAIN_ID` | Kite chain ID |
 | `DEPLOYER_PRIVATE_KEY` | Deployer EOA private key |
-| `USDT_CONTRACT_ADDRESS` | USD₮ ERC-20 address |
+| `USDC_CONTRACT_ADDRESS` | USDC ERC-20 address on Kite |
+| `KITE_ATTESTATION_REGISTRY` | Kite Attestation Registry address |
 | `MARKET_FACTORY_ADDRESS` | MarketFactory address |
 | `AGENT_VAULT_ADDRESS` | AgentVault address |
 | `MARKET_RESOLVER_ADDRESS` | MarketResolver address |
@@ -206,19 +214,49 @@ Add all env vars from `apps/web/.env.local` in the Vercel dashboard → Settings
 
 ---
 
-## Smart Contracts (Sepolia Testnet)
+## Smart Contracts (Kite Chain)
 
-| Contract | Address | Purpose |
-|---|---|---|
-| `AgentVault` | `0x824a901E3609C5d8D6F874b31Fe736364190119D` | Holds USD₮; enforces $1,000/day agent withdrawal limit |
-| `MarketFactory` | `0x3947C99650879990cB2c0C0cbB22FE71e5CF11f9` | Creates and registers PredictionMarket instances; permissionless mode enabled |
-| `MarketResolver` | `0x8e50025719b9f605C11Eb43c1683C9536eAdc8B0` | Multi-path resolution: AI oracle, Chainlink, UMA, multisig |
-| `ConditionalPayment` | `0xC53a881F97fa5AFFf966A150dD6A7151fACcb7f3` | Outcome-linked USDT escrow — fee released only on correct prediction |
-| `SubscriptionManager` | `0xdD8Ac6Aff3D034e9BEC91482140F3C3792D5148B` | On-chain subscription tiers paid in USDT (FREE/$0, BASIC/$29, PRO/$99, INSTITUTIONAL/$499) |
-| Agent wallet (WDK) | `0xd4f54bB98BA78a813c82C78934191cBba3C33900` | Autonomous trading wallet managed by Tether WDK |
-| Deployer / Treasury | `0xF60ab179Fe7ECdc1320b375b7185302ee23c4888` | Contract owner and performance fee recipient |
+| Contract | Purpose |
+|---|---|
+| `AgentVault` | Holds USDC; enforces $1,000/day agent withdrawal limit |
+| `MarketFactory` | Creates and registers PredictionMarket instances; permissionless mode enabled |
+| `MarketResolver` | Multi-path resolution: AI oracle + Chainlink; writes outcome attestation to Kite Attestation Registry |
+| `ConditionalPayment` | Outcome-linked USDC escrow — performance fee released only on correct prediction |
+| `SubscriptionManager` | On-chain subscription tiers paid in USDC (FREE/$0, BASIC/$29, PRO/$99, INSTITUTIONAL/$499) |
+| Agent wallet (AA) | Gasless smart account managed by Kite AA SDK; identified by Agent Passport |
 
-> Individual `PredictionMarket` contracts are deployed dynamically by the agent via `MarketFactory.createMarket()`. Query `factory.getActiveMarkets()` for the current list.
+> Contract addresses are populated after deployment. Individual `PredictionMarket` contracts are deployed dynamically by the agent via `MarketFactory.createMarket()`. Query `factory.getActiveMarkets()` for the current list.
+
+---
+
+## Kite AI Integration
+
+### Account Abstraction (AA SDK)
+The agent wallet is a **Kite smart account** created via the Kite AA SDK. This replaces a standard EOA and provides:
+- **Gasless execution** — the Kite paymaster sponsors all transaction fees; the agent never needs native gas tokens
+- **Programmable constraints** — spending limits and action whitelists enforced at the account level
+- **Batch transactions** — multiple actions (USDC approve + market enter + ConditionalPayment lock) submitted in a single UserOperation
+
+### Agent Passport
+On first startup, the agent registers a **Kite Agent Passport** with:
+- Name: `NeuronFi Trading Agent`
+- Capabilities: `ENTER_MARKET`, `EXIT_MARKET`, `REBALANCE`, `CREATE_MARKET`
+- Owner: deployer address
+
+Every on-chain action is associated with the passport ID, making the agent's full trade history queryable by passport in the Kite explorer.
+
+### Attestation Registry
+Every market resolution writes a tamper-proof attestation to the **Kite Attestation Registry**:
+```
+attestation = keccak256(marketId + aiRationale + outcome + timestamp)
+```
+This means:
+- Every AI decision is permanently auditable on-chain
+- Disputed resolutions can be verified against the attestation
+- The dashboard displays attestation hashes with direct Kite explorer links
+
+### Cross-Chain (LayerZero)
+The `@repo/kite` package wraps Kite's LayerZero integration for cross-chain USDC bridging. Enable with `LAYERZERO_BRIDGE_ENABLED=true`.
 
 ---
 
@@ -226,13 +264,15 @@ Add all env vars from `apps/web/.env.local` in the Vercel dashboard → Settings
 
 | Layer | Technology |
 |---|---|
-| Wallet | Tether WDK (`@tetherto/wdk-wallet-evm`) |
-| Cross-chain bridge | USDT0 LayerZero OFT (`@tetherto/wdk-protocol-bridge-usdt0-evm`) |
+| Wallet | Kite AA SDK (smart account, gasless via paymaster) |
+| Agent Identity | Kite Agent Passport |
+| Attestation | Kite Attestation Registry |
+| Cross-chain bridge | LayerZero USDC OFT (via Kite integration) |
 | AI Planning | LangChain.js + Claude Sonnet 4.6 (`@langchain/anthropic`) |
 | Price Feeds | Chainlink AggregatorV3 (per-feed) + CoinGecko REST API (per-feed fallback) |
 | DEX Data | Uniswap V3 pool queries via ethers.js |
-| Smart Contracts | Solidity 0.8 + Hardhat |
-| Dashboard | Next.js 14 App Router + Recharts + MetaMask wallet connect |
+| Smart Contracts | Solidity 0.8 + Hardhat (deployed to Kite chain) |
+| Dashboard | Next.js 14 App Router + Recharts + wallet connect |
 | Database | PostgreSQL via [Neon](https://neon.tech) (serverless cloud) |
 | Cache / Lock | Redis via [Upstash](https://upstash.com) (distributed lock + write-ahead buffer) |
 | Monorepo | Turborepo + npm workspaces |
@@ -249,19 +289,19 @@ The dashboard is a Polymarket-style real-time UI visible at `/dashboard`:
 - **Search + sort** — filter by keyword, sort by volume / closing soon / probability / trending
 - **Category pills** — All, Crypto, Macro, Politics, Science, Sports, Other (auto-inferred from question text)
 - **KPI strip** — live markets count, total volume, resolutions, agent win rate, P&L
-- **Wallet connect** — MetaMask integration; shows connected address and active subscription plan
-- **Subscribe** — buy a BASIC/PRO/INSTITUTIONAL subscription directly from the UI (USDT approval + on-chain tx)
-- **Portfolio tab** — portfolio value chart, USDT/XAUT balances, trade history with Etherscan links
-- **Agent tab** — live reasoning, cycle time, gas price, ConditionalPayment escrows, last cycle actions
-- **Resolution feed** — AI rationale displayed per resolved market
+- **Wallet connect** — connects to Kite chain; shows connected address and active subscription plan
+- **Subscribe** — buy a BASIC/PRO/INSTITUTIONAL subscription directly from the UI (USDC approval + on-chain tx)
+- **Portfolio tab** — portfolio value chart, USDC balances, trade history with Kite explorer links
+- **Agent tab** — live reasoning, cycle time, gas (always $0 — gasless), ConditionalPayment escrows, last cycle actions, Agent Passport ID
+- **Resolution feed** — AI rationale + Kite Attestation Registry hash per resolved market
 
 ---
 
 ## Risk Controls
 
-- **USDT depeg halt** — all execution suspended if USDT price deviates >0.5% from $1.00
-- **Gas congestion halt** — all execution suspended if base fee >100 gwei
-- **EV threshold** — `ENTER_MARKET` rejected if net expected value <2% (after gas costs)
+- **USDC depeg halt** — all execution suspended if USDC price deviates >0.5% from $1.00
+- **Gas congestion halt** — all execution suspended if base fee exceeds threshold (gasless via paymaster — agent monitors network congestion, not gas cost)
+- **EV threshold** — `ENTER_MARKET` rejected if net expected value <2%
 - **Risk score filter** — rejects positions with probability uncertainty + payout ratio risk >70/100
 - **Position cap** — individual positions clamped to 5% of total portfolio
 - **Double-entry guard** — agent checks open positions each cycle; will not re-enter a market it already holds
