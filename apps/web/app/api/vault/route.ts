@@ -1,14 +1,14 @@
 /**
  * @file app/api/vault/route.ts
- * @description GET /api/vault — returns AgentVault + agent wallet USDT balances.
+ * @description GET /api/vault — returns AgentVault + agent wallet USDC balances.
  */
 
 import { NextResponse } from "next/server";
 
 const VAULT_ABI = [
-  "function usdtBalance() external view returns (uint256)",
-  "function remainingDailyUsdt() external view returns (uint256)",
-  "function dailyLimitUsdt() external view returns (uint256)",
+  "function usdcBalance() external view returns (uint256)",
+  "function remainingDailyUsdc() external view returns (uint256)",
+  "function dailyLimitUsdc() external view returns (uint256)",
 ];
 
 const ERC20_ABI = ["function balanceOf(address) external view returns (uint256)"];
@@ -31,9 +31,9 @@ async function getAgentAddressFromRedis(): Promise<string | null> {
 }
 
 export async function GET() {
-  const rpcUrl = process.env["RPC_URL"];
+  const rpcUrl = process.env["KITE_RPC_URL"];
   const vaultAddress = process.env["AGENT_VAULT_ADDRESS"];
-  const usdtAddress = process.env["USDT_CONTRACT_ADDRESS"];
+  const usdtAddress = process.env["USDC_CONTRACT_ADDRESS"];
 
   if (!rpcUrl || !vaultAddress || !usdtAddress) {
     return NextResponse.json({ error: "Not configured" }, { status: 503 });
@@ -48,9 +48,9 @@ export async function GET() {
     const agentAddress = await getAgentAddressFromRedis();
 
     const [vaultUsdt, remainingDaily, dailyLimit, agentUsdt] = await Promise.all([
-      vault.usdtBalance() as Promise<bigint>,
-      vault.remainingDailyUsdt() as Promise<bigint>,
-      vault.dailyLimitUsdt() as Promise<bigint>,
+      vault.usdcBalance() as Promise<bigint>,
+      vault.remainingDailyUsdc() as Promise<bigint>,
+      vault.dailyLimitUsdc() as Promise<bigint>,
       agentAddress ? (usdt.balanceOf(agentAddress) as Promise<bigint>) : Promise.resolve(0n),
     ]);
 
