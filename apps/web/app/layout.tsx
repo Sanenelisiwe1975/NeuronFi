@@ -8,8 +8,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "DeFi Agent — Tether WDK",
-  description: "Autonomous DeFi Agent powered by Tether WDK — real-time dashboard",
+  title: "NeuronFi — Autonomous DeFi Agent",
+  description: "Autonomous DeFi Agent powered by Kite AI — real-time dashboard",
 };
 
 export default function RootLayout({
