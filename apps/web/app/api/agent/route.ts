@@ -74,7 +74,7 @@ export async function GET() {
     return NextResponse.json(
       {
         iteration: 0,
-        network: process.env["NETWORK"] ?? "sepolia",
+        network: process.env["NETWORK"] ?? "kite",
         portfolio: null,
         lastCycleMs: 0,
         executions: [],
