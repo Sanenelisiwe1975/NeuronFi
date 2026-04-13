@@ -21,12 +21,12 @@ const ACTION_CONFIG: Record<string, { color: string; glyph: string }> = {
   EXIT_MARKET:   { color: "#40c4ff", glyph: "▼" },
   REBALANCE:     { color: "#ffab00", glyph: "⇄" },
   HOLD:          { color: "#3a3a3a", glyph: "◆" },
-  BRIDGE_USDT0:  { color: "#b9a8e8", glyph: "⇢" },
+  BRIDGE_USDC:   { color: "#b9a8e8", glyph: "⇢" },
 };
 
 function TxHash({ hash }: { hash: string }) {
   const [copied, setCopied] = useState(false);
-  const explorerUrl = `https://sepolia.etherscan.io/tx/${hash}`;
+  const explorerUrl = `${process.env["NEXT_PUBLIC_KITE_EXPLORER_URL"] ?? "https://explorer.kite.ai"}/tx/${hash}`;
 
   const copy = (e: React.MouseEvent) => {
     e.preventDefault();
