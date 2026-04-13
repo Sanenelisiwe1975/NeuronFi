@@ -46,7 +46,7 @@ const STEPS = [
   {
     n: "01",
     title: "Observe",
-    desc: "Fetches ETH/XAUT prices from Chainlink, gas snapshots, Uniswap V3 liquidity, and open prediction markets — every cycle.",
+    desc: "Fetches ETH/USDC prices from Chainlink, gas snapshots, Uniswap V3 liquidity, and open prediction markets on Kite chain — every cycle.",
     color: "#7b62c9",
     bg: "#f3f0fb",
     border: "#ddd5f5",
@@ -62,7 +62,7 @@ const STEPS = [
   {
     n: "03",
     title: "Execute",
-    desc: "Risk-gated actions are signed and submitted on-chain via the Tether WDK wallet. A 1% performance fee is locked in escrow — released only on correct predictions.",
+    desc: "Risk-gated actions are signed and submitted gaslessly via the Kite AA SDK. A 1% performance fee is locked in escrow — released only on correct predictions. Every resolution is attested on the Kite Attestation Registry.",
     color: "#c49a00",
     bg: "#fdf9ed",
     border: "#f0e0a0",
@@ -70,12 +70,14 @@ const STEPS = [
 ];
 
 const STACK = [
-  { label: "Tether WDK",    sub: "Autonomous wallet" },
-  { label: "Claude Sonnet", sub: "AI reasoning" },
-  { label: "Chainlink",     sub: "Price oracles" },
-  { label: "Ethereum",      sub: "Sepolia testnet" },
-  { label: "LangChain.js",  sub: "LLM planning" },
-  { label: "Next.js",       sub: "Dashboard" },
+  { label: "Kite AA SDK",     sub: "Gasless smart account" },
+  { label: "Agent Passport",  sub: "On-chain agent identity" },
+  { label: "Claude Sonnet",   sub: "AI reasoning" },
+  { label: "Chainlink",       sub: "Price oracles" },
+  { label: "Kite chain",      sub: "Settlement & attestation" },
+  { label: "LangChain.js",    sub: "LLM planning" },
+  { label: "Next.js",         sub: "Dashboard" },
+  { label: "LayerZero",       sub: "Cross-chain USDC" },
 ];
 
 export default function Home() {
@@ -107,11 +109,12 @@ export default function Home() {
         .stats-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #ede8e8; border: 1px solid #ede8e8; border-radius: 16px; overflow: hidden; }
         .stat-cell { background: #fff; padding: 24px 20px; text-align: center; }
         .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-        .stack-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .stack-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
         @media (max-width: 700px) {
           .stats-strip { grid-template-columns: 1fr 1fr; }
           .steps-grid  { grid-template-columns: 1fr; }
           .stack-grid  { grid-template-columns: 1fr 1fr; }
+          @media (max-width: 1000px) { .stack-grid { grid-template-columns: repeat(2, 1fr); } }
           .hero-btns   { flex-direction: column; }
         }
       `}</style>
@@ -161,7 +164,7 @@ export default function Home() {
           An autonomous AI agent that trades prediction markets on-chain.
         </h1>
         <p style={{ fontSize: 16, color: "#9a8e8e", lineHeight: 1.7, maxWidth: 560, marginBottom: 36 }}>
-          Powered by Claude Sonnet 4.6 and the Tether WDK. Observes markets, reasons about opportunities, and executes trades — without human intervention.
+          Powered by Claude Sonnet 4.6 and the Kite AA SDK. Observes markets, reasons about opportunities, executes gasless trades, and attests every decision on-chain — without human intervention.
         </p>
 
         <div className="hero-btns">
@@ -230,7 +233,7 @@ export default function Home() {
         <div style={{ background: "#f3f0fb", border: "1px solid #ddd5f5", borderRadius: 20, padding: "40px 36px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 20 }}>
           <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 28, color: "#2a2020" }}>Watch it trade live</h2>
           <p style={{ fontSize: 14, color: "#9a8e8e", maxWidth: 440, lineHeight: 1.7 }}>
-            The agent is running on Sepolia testnet. Open the dashboard to see real-time reasoning, on-chain trades, and portfolio performance.
+            The agent is running on Kite chain. Open the dashboard to see real-time reasoning, attested on-chain trades, and portfolio performance.
           </p>
           <Link href="/dashboard" className="btn-primary">Open dashboard →</Link>
         </div>
@@ -239,7 +242,7 @@ export default function Home() {
       {/* Footer */}
       <footer style={{ borderTop: "1px solid #ede8e8", padding: "24px", textAlign: "center" }}>
         <p style={{ fontSize: 12, color: "#c4b8b8" }}>
-          Built for <strong style={{ color: "#9a8e8e" }}>Tether Hackathon Galáctica: WDK Edition 1</strong> · Apache 2.0 ·{" "}
+          Built for <strong style={{ color: "#9a8e8e" }}>Kite AI Hackathon — Agentic Trading & Portfolio Management</strong> · Apache 2.0 ·{" "}
           <a href="https://github.com/Sanenelisiwe1975/autonomous-defi-agent" target="_blank" rel="noopener noreferrer" style={{ color: "#7b62c9" }}>GitHub</a>
         </p>
       </footer>
