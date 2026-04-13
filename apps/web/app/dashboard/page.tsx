@@ -8,7 +8,7 @@ import { PortfolioChart } from "../../components/PortfolioChart";
 interface AgentState {
   iteration: number;
   network: string;
-  portfolio: { address: string; ethWei: string; usdtMicro: string; xautMicro: string; totalValueUsdt: string; snapshotAt: number } | null;
+  portfolio: { address: string; ethWei: string; usdcMicro: string; totalValueUsdc: string; snapshotAt: number } | null;
   lastCycleMs: number;
   executions: { actionId: string; actionType: string; success: boolean; txHash?: string; feeWei?: string; error?: string; skipped: boolean; executedAt: string }[];
   marketSentiment: string;
@@ -454,7 +454,7 @@ export default function PredictionMarketsPage() {
     if (!eth) return;
 
     const SM_ADDRESS = process.env["NEXT_PUBLIC_SUBSCRIPTION_MANAGER_ADDRESS"] ?? "0xdD8Ac6Aff3D034e9BEC91482140F3C3792D5148B";
-    const USDT_ADDRESS = process.env["NEXT_PUBLIC_USDT_ADDRESS"] ?? "0x7169D38820dfd117C3FA1f22a697dBA58d90BA06";
+    const USDC_ADDRESS = process.env["NEXT_PUBLIC_USDC_ADDRESS"] ?? "";
     const priceMicro = BigInt(priceUsdt * 1_000_000);
 
     setSubscribing(planId);
@@ -464,8 +464,8 @@ export default function PredictionMarketsPage() {
       const signer = await provider.getSigner();
 
       if (priceMicro > 0n) {
-        const usdt = new ethers.Contract(USDT_ADDRESS, ["function approve(address,uint256) returns (bool)"], signer);
-        const approveTx = await (usdt as any).approve(SM_ADDRESS, priceMicro);
+        const usdc = new ethers.Contract(USDC_ADDRESS, ["function approve(address,uint256) returns (bool)"], signer);
+        const approveTx = await (usdc as any).approve(SM_ADDRESS, priceMicro);
         await approveTx.wait();
       }
 
@@ -721,8 +721,8 @@ export default function PredictionMarketsPage() {
                     ))}
                   </div>
                   {selected.address && (
-                    <a href={`https://sepolia.etherscan.io/address/${selected.address}`} target="_blank" rel="noreferrer" style={{ display: "block", textAlign: "center", fontSize: 11, color: "#b9a8e8", textDecoration: "none", marginBottom: 12 }}>
-                      View on Etherscan ↗
+                    <a href={`${process.env["NEXT_PUBLIC_KITE_EXPLORER_URL"] ?? "https://explorer.kite.ai"}/address/${selected.address}`} target="_blank" rel="noreferrer" style={{ display: "block", textAlign: "center", fontSize: 11, color: "#b9a8e8", textDecoration: "none", marginBottom: 12 }}>
+                      View on Kite Explorer ↗
                     </a>
                   )}
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -826,9 +826,8 @@ export default function PredictionMarketsPage() {
                   <div className="snapshot-grid">
                     {[
                       { label: "ETH balance", val: `${latestSnap.ethBalance} ETH` },
-                      { label: "USD₮",        val: `$${latestSnap.usdtBalance}` },
-                      { label: "XAU₮",        val: latestSnap.xautBalance },
-                      { label: "Total (USDT)", val: `$${latestSnap.totalUsdt}` },
+                      { label: "USDC",         val: `$${latestSnap.usdtBalance}` },
+                      { label: "Total (USDC)", val: `$${latestSnap.totalUsdt}` },
                     ].map(r => (
                       <div key={r.label} style={{ background: "#fdf9f7", borderRadius: 10, padding: "10px 12px" }}>
                         <p style={{ fontSize: 10, color: "#c4b8b8", marginBottom: 3 }}>{r.label}</p>
@@ -1010,14 +1009,14 @@ export default function PredictionMarketsPage() {
                   {agentState.executions.map((e, i) => {
                     const actionColors: Record<string, string> = {
                       ENTER_MARKET: "#5f9a5f", EXIT_MARKET: "#7b62c9",
-                      REBALANCE: "#c49a00", BRIDGE_USDT0: "#7b62c9", HOLD: "#c4b8b8"
+                      REBALANCE: "#c49a00", BRIDGE_USDC: "#7b62c9", HOLD: "#c4b8b8"
                     };
                     const color = actionColors[e.actionType] ?? "#b8aeae";
                     return (
                       <div key={i} style={{ display: "flex", gap: 12, padding: "10px 0", borderBottom: i < agentState.executions.length - 1 ? "1px solid #f5f0f0" : "none" }}>
                         <div style={{ width: 34, height: 34, borderRadius: 9, background: `${color}15`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           <span style={{ fontSize: 11, color, fontWeight: 600 }}>
-                            {e.actionType === "ENTER_MARKET" ? "▲" : e.actionType === "EXIT_MARKET" ? "▼" : e.actionType === "BRIDGE_USDT0" ? "⇢" : e.actionType === "REBALANCE" ? "⇄" : "◆"}
+                            {e.actionType === "ENTER_MARKET" ? "▲" : e.actionType === "EXIT_MARKET" ? "▼" : e.actionType === "BRIDGE_USDC" ? "⇢" : e.actionType === "REBALANCE" ? "⇄" : "◆"}
                           </span>
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
