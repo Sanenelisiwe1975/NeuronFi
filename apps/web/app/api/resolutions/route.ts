@@ -25,6 +25,24 @@ async function fetchRationale(
   }
 }
 
+async function fetchAttestationHash(marketAddress: string): Promise<string | null> {
+  const databaseUrl = process.env["DATABASE_URL"];
+  if (!databaseUrl) return null;
+  try {
+    const { default: pg } = await import("pg");
+    const client = new pg.Client({ connectionString: databaseUrl });
+    await client.connect();
+    const { rows } = await client.query<{ attestation_hash: string }>(
+      `SELECT attestation_hash FROM attestations WHERE market_address = $1 ORDER BY attested_at DESC LIMIT 1`,
+      [marketAddress]
+    );
+    await client.end();
+    return rows[0]?.attestation_hash ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET() {
   const rpcUrl          = process.env["KITE_RPC_URL"];
   const factoryAddress  = process.env["MARKET_FACTORY_ADDRESS"];
@@ -60,7 +78,10 @@ export async function GET() {
           const ts       = Number(res.timestamp);
           const proposed = ts > 0;
 
-          const rationale = proposed ? await fetchRationale(resolver, resolver, marketId) : null;
+          const [rationale, attestationHash] = await Promise.all([
+            proposed ? fetchRationale(resolver, resolver, marketId) : Promise.resolve(null),
+            proposed ? fetchAttestationHash(addr) : Promise.resolve(null),
+          ]);
 
           return {
             marketAddress:     addr,
@@ -72,6 +93,7 @@ export async function GET() {
             resolvedBy:        res.resolvedBy,
             finalized:         res.finalized,
             rationale,
+            attestationHash,
             proposedAt:        ts > 0 ? new Date(ts * 1000).toISOString() : null,
             disputeWindowEnds: ts > 0 ? new Date((ts + 86400) * 1000).toISOString() : null,
           };

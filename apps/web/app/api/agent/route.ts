@@ -83,6 +83,7 @@ export async function GET() {
         summary: "",
         gasGwei,
         updatedAt: new Date().toISOString(),
+        passportId: null,
         status: "WAITING",
       },
       { status: 200 }
