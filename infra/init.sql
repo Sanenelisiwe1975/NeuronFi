@@ -1,5 +1,6 @@
--- ============================================================
---  Autonomous DeFi Agent — PostgreSQL schema
+ -- ============================================================
+--  NeuronFi — PostgreSQL schema
+--  Apply via: paste into Neon SQL editor (https://neon.tech)
 -- ============================================================
 
 -- Agent loop outcomes
@@ -36,9 +37,8 @@ CREATE TABLE IF NOT EXISTS portfolio_snapshots (
   id           SERIAL PRIMARY KEY,
   address      TEXT NOT NULL,
   eth_wei      NUMERIC NOT NULL,
-  usdt_micro   NUMERIC NOT NULL,
-  xaut_micro   NUMERIC NOT NULL,
-  total_usdt   NUMERIC NOT NULL,
+  usdc_micro   NUMERIC NOT NULL,
+  total_usdc   NUMERIC NOT NULL,
   snapshot_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -46,8 +46,8 @@ CREATE TABLE IF NOT EXISTS portfolio_snapshots (
 CREATE TABLE IF NOT EXISTS market_signals (
   id            SERIAL PRIMARY KEY,
   observed_at   TIMESTAMPTZ NOT NULL,
-  usdt_price    NUMERIC,
-  xaut_price    NUMERIC,
+  usdc_price    NUMERIC,
+  eth_price     NUMERIC,
   gas_gwei      NUMERIC,
   opportunities JSONB,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -61,7 +61,20 @@ CREATE TABLE IF NOT EXISTS agent_priors (
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Kite attestation records (mirrors what's written to Kite Attestation Registry)
+CREATE TABLE IF NOT EXISTS attestations (
+  id              SERIAL PRIMARY KEY,
+  market_address  TEXT NOT NULL,
+  market_id       TEXT NOT NULL,
+  attestation_hash TEXT NOT NULL,
+  outcome         TEXT NOT NULL,
+  rationale       TEXT,
+  passport_id     TEXT,
+  attested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Indices
-CREATE INDEX IF NOT EXISTS idx_trades_executed_at      ON trades(executed_at DESC);
-CREATE INDEX IF NOT EXISTS idx_portfolio_snapshot_at   ON portfolio_snapshots(snapshot_at DESC);
-CREATE INDEX IF NOT EXISTS idx_loop_outcomes_iteration ON loop_outcomes(iteration DESC);
+CREATE INDEX IF NOT EXISTS idx_trades_executed_at        ON trades(executed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_portfolio_snapshot_at     ON portfolio_snapshots(snapshot_at DESC);
+CREATE INDEX IF NOT EXISTS idx_loop_outcomes_iteration   ON loop_outcomes(iteration DESC);
+CREATE INDEX IF NOT EXISTS idx_attestations_market       ON attestations(market_address);
