@@ -9,6 +9,7 @@ interface AgentState {
   iteration: number;
   network: string;
   portfolio: { address: string; ethWei: string; usdcMicro: string; totalValueUsdc: string; snapshotAt: number } | null;
+  passportId: string | null;
   lastCycleMs: number;
   executions: { actionId: string; actionType: string; success: boolean; txHash?: string; feeWei?: string; error?: string; skipped: boolean; executedAt: string }[];
   marketSentiment: string;
@@ -25,7 +26,7 @@ interface ConditionalPayment {
   beneficiary: string;
   marketId: string;
   question: string | null;
-  amountUsdt: string;
+  amountUsdc: string;
   triggerOutcome: string;
   status: "PENDING" | "CLAIMED" | "REFUNDED";
 }
@@ -36,7 +37,7 @@ interface LiveMarket {
   yesProbability: number;
   closesAt: string;
   daysLeft: number;
-  volumeUsdt: string;
+  volumeUsdc: string;
   tradeable: boolean;
   resolvedOutcome: number;
   agentYesUsdt: string | null;
@@ -45,7 +46,7 @@ interface LiveMarket {
 
 interface VaultState {
   vaultUsdt: string;
-  agentUsdt: string;
+  agentUsdc: string;
   dailyLimit: string;
   dailyUsed: string;
   remainingDaily: string;
@@ -62,6 +63,7 @@ interface Resolution {
   resolvedBy: string;
   finalized: boolean;
   rationale: string | null;
+  attestationHash: string | null;
   proposedAt: string | null;
   disputeWindowEnds: string | null;
 }
@@ -69,7 +71,7 @@ interface Resolution {
 interface SubscriptionPlan {
   id: number;
   name: string;
-  priceUsdt: string;
+  priceUsdc: string;
   periodDays: number;
   active: boolean;
 }
@@ -85,9 +87,9 @@ interface PortfolioSnapshot {
   id: number;
   address: string;
   ethBalance: string;
-  usdtBalance: string;
+  usdcBalance: string;
   xautBalance: string;
-  totalUsdt: string;
+  totalUsdc: string;
   snapshotAt: string;
 }
 
@@ -161,7 +163,7 @@ function deterministicTrend(seed: string, yesProb: number): number[] {
 function liveToMarket(m: LiveMarket,): Market {
   const yesProb    = Math.round(m.yesProbability * 100);
   const closes     = new Date(m.closesAt).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const volumeRaw  = Number(m.volumeUsdt);
+  const volumeRaw  = Number(m.volumeUsdc);
   const volume    = volumeRaw >= 1_000_000 ? `$${(volumeRaw / 1_000_000).toFixed(1)}M`
     : volumeRaw >= 1_000 ? `$${(volumeRaw / 1_000).toFixed(0)}K`
     : `$${volumeRaw.toFixed(0)}`;
@@ -328,6 +330,19 @@ function ResolutionRow({ r }: { r: Resolution }) {
           &ldquo;{r.rationale}&rdquo;
         </p>
       )}
+      {r.attestationHash && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+          <span style={{ fontSize: 9, letterSpacing: "0.12em", color: "#b9a8e8", fontWeight: 500 }}>KITE ATTESTATION</span>
+          <a
+            href={`${process.env["NEXT_PUBLIC_KITE_EXPLORER_URL"] ?? "https://explorer.kite.ai"}/tx/${r.attestationHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: 10, color: "#7b62c9", fontFamily: "monospace", textDecoration: "none" }}
+          >
+            {r.attestationHash.slice(0, 10)}…{r.attestationHash.slice(-6)} ↗
+          </a>
+        </div>
+      )}
     </div>
   );
 }
@@ -448,14 +463,14 @@ export default function PredictionMarketsPage() {
 
   const [subscribing, setSubscribing] = useState<number | null>(null);
 
-  const subscribeToPlan = useCallback(async (planId: number, priceUsdt: number) => {
+  const subscribeToPlan = useCallback(async (planId: number, priceUsdc: number) => {
     if (!walletAddress) { alert("Connect your wallet first."); return; }
     const eth = (window as typeof window & { ethereum?: { request: (a: { method: string; params: unknown[] }) => Promise<unknown> } }).ethereum;
     if (!eth) return;
 
     const SM_ADDRESS = process.env["NEXT_PUBLIC_SUBSCRIPTION_MANAGER_ADDRESS"] ?? "0xdD8Ac6Aff3D034e9BEC91482140F3C3792D5148B";
     const USDC_ADDRESS = process.env["NEXT_PUBLIC_USDC_ADDRESS"] ?? "";
-    const priceMicro = BigInt(priceUsdt * 1_000_000);
+    const priceMicro = BigInt(priceUsdc * 1_000_000);
 
     setSubscribing(planId);
     try {
@@ -487,11 +502,11 @@ export default function PredictionMarketsPage() {
   const agentRunning = agentState?.status === "RUNNING";
 
   const latestSnap  = snapshots[snapshots.length - 1];
-  const portfolioVal = latestSnap ? `$${Number(latestSnap.totalUsdt).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—";
-  const usdtBal     = latestSnap ? `$${Number(latestSnap.usdtBalance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD₮` : "—";
+  const portfolioVal = latestSnap ? `$${Number(latestSnap.totalUsdc).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—";
+  const usdtBal     = latestSnap ? `$${Number(latestSnap.usdcBalance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC` : "—";
   const xautBal     = latestSnap ? `${Number(latestSnap.xautBalance).toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })} XAU₮` : "—";
 
-  const chartSnapshots = snapshots.map(s => ({ snapshotAt: s.snapshotAt, totalUsdt: s.totalUsdt }));
+  const chartSnapshots = snapshots.map(s => ({ snapshotAt: s.snapshotAt, totalUsdt: s.totalUsdc }));
 
   return (
     <>
@@ -628,7 +643,7 @@ export default function PredictionMarketsPage() {
               <div className="kpi-grid">
                 {[
                   { label: "Markets",     value: String(markets.length),    sub: liveMarkets.length > 0 ? "on-chain" : "demo", accent: "#b9a8e8", bg: "#f3f0fb", border: "#ddd5f5" },
-                  { label: "Volume",      value: liveMarkets.length > 0 ? `$${(liveMarkets.reduce((s, m) => s + Number(m.volumeUsdt), 0) / 1000).toFixed(0)}K` : "$13.7M", sub: "USD₮ deposited", accent: "#9ec89e", bg: "#f0f5f0", border: "#cde0cd" },
+                  { label: "Volume",      value: liveMarkets.length > 0 ? `$${(liveMarkets.reduce((s, m) => s + Number(m.volumeUsdc), 0) / 1000).toFixed(0)}K` : "$13.7M", sub: "USDC deposited", accent: "#9ec89e", bg: "#f0f5f0", border: "#cde0cd" },
                   { label: "Resolutions", value: String(resolutions.filter(r => r.proposed).length), sub: `${resolutions.filter(r => r.finalized).length} finalized`, accent: "#e8a8a8", bg: "#fdf0f0", border: "#f5d0d0" },
                   { label: "Win rate",    value: winRate !== null ? `${winRate}%` : "—",   sub: "resolved markets",  accent: "#c49a00", bg: "#fffbf0", border: "#f0e0a0" },
                   { label: "P&L",         value: portfolioPnl ? `${portfolioPnl.positive ? "+" : ""}${portfolioPnl.pct}%` : "—", sub: "portfolio change", accent: portfolioPnl?.positive ? "#9ec89e" : "#e8a8a8", bg: portfolioPnl?.positive ? "#f0f5f0" : "#fdf0f0", border: portfolioPnl?.positive ? "#cde0cd" : "#f5d0d0" },
@@ -757,10 +772,10 @@ export default function PredictionMarketsPage() {
                         {subscriptionState.activeSubscribers} active
                       </span>
                     </div>
-                    <p style={{ fontSize: 11, color: "#c4b8b8", marginBottom: 14 }}>${subscriptionState.totalRevenue} USD₮ total revenue</p>
+                    <p style={{ fontSize: 11, color: "#c4b8b8", marginBottom: 14 }}>${subscriptionState.totalRevenue} USDC total revenue</p>
                     {subscriptionState.plans.filter(p => p.name !== "FREE").map(plan => {
                       const isCurrentPlan = userSubPlan === plan.name;
-                      const priceNum = Number(plan.priceUsdt.replace("$", ""));
+                      const priceNum = Number(plan.priceUsdc.replace("$", ""));
                       return (
                         <div key={plan.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #f5f0f0" }}>
                           <div>
@@ -768,7 +783,7 @@ export default function PredictionMarketsPage() {
                             <span style={{ fontSize: 11, color: "#c4b8b8", marginLeft: 6 }}>{plan.periodDays}d</span>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontSize: 13, fontWeight: 500, color: "#7b62c9" }}>{plan.priceUsdt}</span>
+                            <span style={{ fontSize: 13, fontWeight: 500, color: "#7b62c9" }}>{plan.priceUsdc}</span>
                             {isCurrentPlan ? (
                               <span style={{ fontSize: 10, background: "#f0f5f0", color: "#5f9a5f", border: "1px solid #cde0cd", borderRadius: 99, padding: "2px 8px", fontWeight: 600 }}>Active</span>
                             ) : (
@@ -801,7 +816,7 @@ export default function PredictionMarketsPage() {
               <div className="portfolio-summary">
                 {[
                   { label: "Portfolio value", val: portfolioVal, sub: "total mark-to-market", color: "#7b62c9", bg: "#f3f0fb", border: "#ddd5f5" },
-                  { label: "USD₮ balance",    val: usdtBal,      sub: "agent wallet",        color: "#5f9a5f", bg: "#f0f5f0", border: "#cde0cd" },
+                  { label: "USDC balance",    val: usdtBal,      sub: "agent wallet",        color: "#5f9a5f", bg: "#f0f5f0", border: "#cde0cd" },
                   { label: "XAU₮ balance",    val: xautBal,      sub: "agent wallet",        color: "#b9a8e8", bg: "#f3f0fb", border: "#ddd5f5" },
                 ].map((k, i) => (
                   <div key={i} style={{ background: k.bg, border: `1px solid ${k.border}`, borderRadius: 14, padding: "16px 18px" }}>
@@ -826,8 +841,8 @@ export default function PredictionMarketsPage() {
                   <div className="snapshot-grid">
                     {[
                       { label: "ETH balance", val: `${latestSnap.ethBalance} ETH` },
-                      { label: "USDC",         val: `$${latestSnap.usdtBalance}` },
-                      { label: "Total (USDC)", val: `$${latestSnap.totalUsdt}` },
+                      { label: "USDC",         val: `$${latestSnap.usdcBalance}` },
+                      { label: "Total (USDC)", val: `$${latestSnap.totalUsdc}` },
                     ].map(r => (
                       <div key={r.label} style={{ background: "#fdf9f7", borderRadius: 10, padding: "10px 12px" }}>
                         <p style={{ fontSize: 10, color: "#c4b8b8", marginBottom: 3 }}>{r.label}</p>
@@ -847,7 +862,7 @@ export default function PredictionMarketsPage() {
                     <div style={{ marginBottom: 16 }}>
                       <p style={{ fontSize: 11, color: "#c4b8b8", marginBottom: 4 }}>VAULT BALANCE</p>
                       <p style={{ fontSize: 22, fontFamily: "'DM Serif Display', serif", color: "#2a2020" }}>${Number(vaultState.vaultUsdt).toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
-                      <p style={{ fontSize: 11, color: "#b8aeae", marginTop: 2 }}>USD₮ on-chain</p>
+                      <p style={{ fontSize: 11, color: "#b8aeae", marginTop: 2 }}>USDC on-chain</p>
                     </div>
                     <div style={{ marginBottom: 16 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
@@ -865,7 +880,7 @@ export default function PredictionMarketsPage() {
                     </div>
                     <div style={{ background: "#f3f0fb", borderRadius: 10, padding: "10px 12px" }}>
                       <p style={{ fontSize: 10, color: "#7b62c9", marginBottom: 3 }}>AGENT WALLET</p>
-                      <p style={{ fontSize: 14, fontWeight: 500, color: "#2a2020" }}>${vaultState.agentUsdt} USD₮</p>
+                      <p style={{ fontSize: 14, fontWeight: 500, color: "#2a2020" }}>${vaultState.agentUsdc} USDC</p>
                       <p style={{ fontSize: 10, color: "#b9a8e8", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{vaultState.agentAddress}</p>
                     </div>
                   </>
@@ -910,6 +925,8 @@ export default function PredictionMarketsPage() {
                   { label: "Strategy",           val: "Expected-value prediction markets" },
                   { label: "Max position",        val: "$500 per market" },
                   { label: "LLM model",           val: "Claude Sonnet 4.6" },
+                  { label: "Chain",               val: "Kite" },
+                  { label: "Gas",                 val: "Gasless (paymaster)" },
                   { label: "Iteration",           val: agentState ? `#${agentState.iteration}` : "—" },
                   { label: "Last cycle",          val: agentState ? `${(agentState.lastCycleMs / 1000).toFixed(1)}s` : "—" },
                   { label: "Status",              val: agentState?.status ?? "WAITING" },
@@ -920,6 +937,33 @@ export default function PredictionMarketsPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Agent Passport */}
+              {agentState?.passportId && (
+                <div style={{ background: "#fff", border: "1px solid #ede8e8", borderRadius: 16, padding: "22px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                    <p style={{ fontFamily: "'DM Serif Display', serif", fontSize: 16 }}>Agent Passport</p>
+                    <span style={{ fontSize: 10, background: "#f0f5f0", border: "1px solid #cde0cd", color: "#5f9a5f", borderRadius: 99, padding: "3px 10px", fontWeight: 500, letterSpacing: "0.08em" }}>REGISTERED</span>
+                  </div>
+                  <div style={{ background: "#f9f7fe", borderRadius: 10, padding: "12px 14px", marginBottom: 12 }}>
+                    <p style={{ fontSize: 9, color: "#b9a8e8", letterSpacing: "0.12em", fontWeight: 500, marginBottom: 4 }}>PASSPORT ID</p>
+                    <p style={{ fontFamily: "monospace", fontSize: 12, color: "#4a3a6a", wordBreak: "break-all" }}>{agentState.passportId}</p>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+                    {["ENTER_MARKET", "EXIT_MARKET", "REBALANCE", "CREATE_MARKET", "BRIDGE_USDC"].map(cap => (
+                      <span key={cap} style={{ fontSize: 9, background: "#f3f0fb", border: "1px solid #ddd5f5", color: "#7b62c9", borderRadius: 99, padding: "2px 8px", fontWeight: 500, letterSpacing: "0.06em" }}>{cap}</span>
+                    ))}
+                  </div>
+                  <a
+                    href={`${process.env["NEXT_PUBLIC_KITE_EXPLORER_URL"] ?? "https://explorer.kite.ai"}/address/${agentState.passportId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: 11, color: "#7b62c9", textDecoration: "none" }}
+                  >
+                    View on Kite Explorer ↗
+                  </a>
+                </div>
+              )}
 
               {/* Live reasoning */}
               <div style={{ background: "#f3f0fb", border: "1px solid #ddd5f5", borderRadius: 16, padding: "20px 22px" }}>
@@ -964,7 +1008,7 @@ export default function PredictionMarketsPage() {
                     {conditionalPayments.filter(p => p.status === "PENDING").length} active
                   </span>
                 </div>
-                <p style={{ fontSize: 11, color: "#c4b8b8", marginBottom: 16 }}>USD₮ locked — released only if agent prediction is correct</p>
+                <p style={{ fontSize: 11, color: "#c4b8b8", marginBottom: 16 }}>USDC locked — released only if agent prediction is correct</p>
                 {conditionalPayments.length === 0 ? (
                   <p style={{ fontSize: 13, color: "#c4b8b8", textAlign: "center", padding: "20px 0" }}>No escrows yet</p>
                 ) : (
@@ -974,7 +1018,7 @@ export default function PredictionMarketsPage() {
                         <span style={{ fontSize: 13, fontWeight: 500, color: "#2a2020", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginRight: 10 }}>
                           {p.question ?? `Market ${p.marketId.slice(0, 10)}…`}
                         </span>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: "#5f9a5f", flexShrink: 0 }}>${p.amountUsdt} USD₮</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "#5f9a5f", flexShrink: 0 }}>${p.amountUsdc} USDC</span>
                       </div>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <span style={{ fontSize: 10, color: "#7b62c9", background: "#f3f0fb", border: "1px solid #ddd5f5", borderRadius: 99, padding: "2px 8px" }}>
