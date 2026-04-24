@@ -26,7 +26,7 @@ async function fetchRationale(
 }
 
 export async function GET() {
-  const rpcUrl          = process.env["RPC_URL"];
+  const rpcUrl          = process.env["KITE_RPC_URL"];
   const factoryAddress  = process.env["MARKET_FACTORY_ADDRESS"];
   const resolverAddress = process.env["MARKET_RESOLVER_ADDRESS"];
 

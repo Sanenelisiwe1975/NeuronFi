@@ -12,7 +12,7 @@ const MARKET_ABI = ["function question() external view returns (string)"];
 const OUTCOME_LABEL = ["UNRESOLVED", "YES", "NO"];
 
 export async function GET() {
-  const rpcUrl      = process.env["RPC_URL"];
+  const rpcUrl      = process.env["KITE_RPC_URL"];
   const cpAddress   = process.env["CONDITIONAL_PAYMENT_ADDRESS"];
 
   if (!rpcUrl || !cpAddress) {
@@ -56,7 +56,7 @@ export async function GET() {
           beneficiary,
           marketId,
           question,
-          amountUsdt:     (Number(amount) / 1e6).toFixed(2),
+          amountUsdc:     (Number(amount) / 1e6).toFixed(2),
           triggerOutcome: OUTCOME_LABEL[Number(triggerOutcome)] ?? "UNKNOWN",
           status,
         };

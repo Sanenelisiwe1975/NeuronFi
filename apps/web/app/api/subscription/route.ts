@@ -13,7 +13,7 @@ const PLAN_NAMES = ["FREE", "BASIC", "PRO", "INSTITUTIONAL"];
 const PLAN_PRICES = ["$0", "$29", "$99", "$499"];
 
 export async function GET() {
-  const rpcUrl  = process.env["RPC_URL"];
+  const rpcUrl  = process.env["KITE_RPC_URL"];
   const smAddr  = process.env["SUBSCRIPTION_MANAGER_ADDRESS"];
 
   if (!rpcUrl || !smAddr) {
@@ -37,7 +37,7 @@ export async function GET() {
     const plans = planConfigs.map((cfg, i) => ({
       id:             i,
       name:           PLAN_NAMES[i] ?? `PLAN_${i}`,
-      priceUsdt:      PLAN_PRICES[i] ?? `$${(Number(cfg.pricePerPeriod) / 1e6).toFixed(0)}`,
+      priceUsdc:      PLAN_PRICES[i] ?? `$${(Number(cfg.pricePerPeriod) / 1e6).toFixed(0)}`,
       periodDays:     Math.round(Number(cfg.period) / 86400),
       gracePeriodDays:Math.round(Number(cfg.gracePeriod) / 86400),
       active:         cfg.active,

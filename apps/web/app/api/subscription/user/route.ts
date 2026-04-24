@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const address = req.nextUrl.searchParams.get("address");
   if (!address) return NextResponse.json({ error: "Missing address" }, { status: 400 });
 
-  const rpcUrl = process.env["RPC_URL"];
+  const rpcUrl = process.env["KITE_RPC_URL"];
   const smAddr = process.env["SUBSCRIPTION_MANAGER_ADDRESS"];
   if (!rpcUrl || !smAddr) return NextResponse.json({ plan: null });
 

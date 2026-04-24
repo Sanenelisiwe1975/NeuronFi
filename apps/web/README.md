@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/create-next-app).
+# apps/web — NeuronFi Dashboard
 
-## Getting Started
+Real-time Next.js dashboard for the NeuronFi autonomous DeFi agent running on Kite chain.
 
-First, run the development server:
+## Pages
+
+| Route | Description |
+|---|---|
+| `/` | Home — agent status, live stats, how-it-works, tech stack |
+| `/dashboard` | Full dashboard — markets, portfolio, agent reasoning, resolutions, subscriptions |
+
+## API Routes
+
+| Route | Description |
+|---|---|
+| `GET /api/agent` | Latest agent state from Redis (iteration, portfolio, reasoning, executions) |
+| `GET /api/markets` | Active prediction markets from Kite chain via MarketFactory |
+| `GET /api/portfolio` | Last 50 portfolio snapshots from PostgreSQL |
+| `GET /api/trades` | Last 20 trade executions from PostgreSQL |
+| `GET /api/vault` | AgentVault + agent USDC balances from Kite chain |
+| `GET /api/resolutions` | Market resolution statuses + AI rationale from Kite chain |
+| `GET /api/conditional` | ConditionalPayment escrow statuses from Kite chain |
+| `GET /api/subscription` | SubscriptionManager plans + subscriber data from Kite chain |
+| `GET /api/subscription/user` | Active subscription plan for a given wallet address |
+
+## Environment Variables
+
+See [apps/web/.env.example](../../apps/web/.env.example) for the full list. Key variables:
+
+| Variable | Description |
+|---|---|
+| `KITE_RPC_URL` | Kite chain JSON-RPC endpoint |
+| `KITE_ATTESTATION_REGISTRY` | Attestation Registry contract — used in resolution feed |
+| `NEXT_PUBLIC_KITE_EXPLORER_URL` | Kite block explorer base URL for tx/address links |
+| `NEXT_PUBLIC_USDC_ADDRESS` | USDC contract address (client-side subscription flow) |
+| `REDIS_URL` | Reads live agent state (`agent:latest` key) |
+| `DATABASE_URL` | Reads trade history and portfolio snapshots |
+
+## Running
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Development
+npm run dev -w apps/web
+# → http://localhost:3000
+
+# Production build
+npm run build -w apps/web
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deployment
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Connect the repo to [Vercel](https://vercel.com):
+- **Root Directory**: *(blank — repo root)*
+- **Build Command**: `npx turbo run build --filter=web`
+- **Output Directory**: `apps/web/.next`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Add all variables from `.env.example` in Vercel → Settings → Environment Variables.
