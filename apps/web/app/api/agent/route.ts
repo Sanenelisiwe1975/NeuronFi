@@ -51,7 +51,7 @@ async function getFromRedis(): Promise<AgentState | null> {
 
 
 async function getGasGwei(): Promise<string | null> {
-  const rpcUrl = process.env["RPC_URL"];
+  const rpcUrl = process.env["KITE_RPC_URL"];
   if (!rpcUrl) return null;
   try {
     const { ethers } = await import("ethers");

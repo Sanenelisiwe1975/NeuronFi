@@ -9,9 +9,8 @@ interface PortfolioRow {
   id: number;
   address: string;
   eth_wei: string;
-  usdt_micro: string;
-  xaut_micro: string;
-  total_usdt: string;
+  usdc_micro: string;
+  total_usdc: string;
   snapshot_at: string;
 }
 
@@ -37,10 +36,9 @@ export async function GET() {
   const snapshots = rows.map((r) => ({
     id: r.id,
     address: r.address,
-    ethBalance: (Number(r.eth_wei) / 1e18).toFixed(6),
-    usdtBalance: (Number(r.usdt_micro) / 1e6).toFixed(2),
-    xautBalance: (Number(r.xaut_micro) / 1e6).toFixed(6),
-    totalUsdt: (Number(r.total_usdt) / 1e6).toFixed(2),
+    ethBalance:  (Number(r.eth_wei)    / 1e18).toFixed(6),
+    usdcBalance: (Number(r.usdc_micro) / 1e6).toFixed(2),
+    totalUsdc:   (Number(r.total_usdc) / 1e6).toFixed(2),
     snapshotAt: r.snapshot_at,
   }));
   return NextResponse.json({ snapshots });

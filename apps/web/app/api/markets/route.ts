@@ -32,7 +32,7 @@ async function getAgentAddress(): Promise<string | null> {
 }
 
 export async function GET() {
-  const rpcUrl         = process.env["RPC_URL"];
+  const rpcUrl         = process.env["KITE_RPC_URL"];
   const factoryAddress = process.env["MARKET_FACTORY_ADDRESS"];
 
   if (!rpcUrl || !factoryAddress) return NextResponse.json({ markets: [] });
