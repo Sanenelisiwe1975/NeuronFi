@@ -1,7 +1,7 @@
 {
-  "name": "autonomous-defi-agent",
+  "name": "neuronfi",
   "private": true,
-  "description": "Autonomous DeFi Agent — Tether Hackathon Galáctica WDK Edition 1",
+  "description": "NeuronFi — Autonomous DeFi Agent on Kite chain | Kite AI Hackathon",
   "license": "Apache-2.0",
   "scripts": {
     "build": "turbo run build",
