@@ -17,7 +17,7 @@
     "@repo/data": "*",
     "ethers": "^6.13.0",
     "@repo/planner": "*",
-    "@repo/wdk": "*",
+    "@repo/kite": "*",
     "@langchain/core": "^0.3.0",
     "@langchain/openai": "^0.3.0",
     "langchain": "^0.3.0",
