@@ -1,0 +1,26 @@
+{
+  "name": "@repo/kite",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kite Agent Passport integration — AI agent account, session management, and gasless payments",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "check-types": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "ethers": "^6.13.0",
+    "zod": "^3.24.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "5.9.2"
+  }
+}
