@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { TradeTable } from "../../components/TradeTable";
-import { PortfolioChart } from "../../components/PortfolioChart";
+import { TradeTable } from "../../pages/Positions.js";
+import { PortfolioChart } from "../../pages/Dashboard.js";
 
 
 interface AgentState {
