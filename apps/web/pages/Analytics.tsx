@@ -1,9 +1,3 @@
-/**
- * Learning & Analytics page.
- * Bayesian prior updates, success analytics, neural persistence logs,
- * risk parameter controls, and system health metrics.
- */
-
 import { useState, useEffect, useRef } from "react";
 import { Download, Calendar, Pause, Play, AlertCircle } from "lucide-react";
 import { useAgent } from "../context/AgentContext";
