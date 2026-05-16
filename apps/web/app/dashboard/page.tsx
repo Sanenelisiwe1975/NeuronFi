@@ -436,8 +436,8 @@ export default function PredictionMarketsPage() {
 
   const portfolioPnl = (() => {
     if (snapshots.length < 2) return null;
-    const first = Number(snapshots[0]?.totalUsdt ?? 0);
-    const last  = Number(snapshots[snapshots.length - 1]?.totalUsdt ?? 0);
+    const first = Number(snapshots[0]?.totalUsdc ?? 0);
+    const last  = Number(snapshots[snapshots.length - 1]?.totalUsdc ?? 0);
     if (first === 0) return null;
     const pct = ((last - first) / first) * 100;
     return { pct: pct.toFixed(1), positive: pct >= 0 };
@@ -502,9 +502,13 @@ export default function PredictionMarketsPage() {
   const agentRunning = agentState?.status === "RUNNING";
 
   const latestSnap  = snapshots[snapshots.length - 1];
-  const portfolioVal = latestSnap ? `$${Number(latestSnap.totalUsdc).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—";
-  const usdtBal     = latestSnap ? `$${Number(latestSnap.usdcBalance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC` : "—";
-  const xautBal     = latestSnap ? `${Number(latestSnap.xautBalance).toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })} XAU₮` : "—";
+  const safeDisplay = (v: string | undefined, decimals: number) => {
+    const n = Number(v);
+    return isFinite(n) ? n.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) : "0." + "0".repeat(decimals);
+  };
+  const portfolioVal = latestSnap ? `$${safeDisplay(latestSnap.totalUsdc, 2)}` : "—";
+  const usdtBal     = latestSnap ? `$${safeDisplay(latestSnap.usdcBalance, 2)} USDC` : "—";
+  const xautBal     = latestSnap ? `${safeDisplay(latestSnap.xautBalance, 4)} XAU₮` : "—";
 
   const chartSnapshots = snapshots.map(s => ({ snapshotAt: s.snapshotAt, totalUsdt: s.totalUsdc }));
 

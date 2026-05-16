@@ -33,12 +33,17 @@ async function getFromPostgres(): Promise<PortfolioRow[]> {
 
 export async function GET() {
   const rows = await getFromPostgres();
+  const safeNum = (v: unknown, divisor = 1) => {
+    const n = Number(v) / divisor;
+    return isFinite(n) ? n : 0;
+  };
   const snapshots = rows.map((r) => ({
     id: r.id,
     address: r.address,
-    ethBalance:  (Number(r.eth_wei)    / 1e18).toFixed(6),
-    usdcBalance: (Number(r.usdc_micro) / 1e6).toFixed(2),
-    totalUsdc:   (Number(r.total_usdc) / 1e6).toFixed(2),
+    ethBalance:  safeNum(r.eth_wei,    1e18).toFixed(6),
+    usdcBalance: safeNum(r.usdc_micro, 1e6).toFixed(2),
+    xautBalance: "0.0000",
+    totalUsdc:   safeNum(r.total_usdc, 1e6).toFixed(2),
     snapshotAt: r.snapshot_at,
   }));
   return NextResponse.json({ snapshots });
