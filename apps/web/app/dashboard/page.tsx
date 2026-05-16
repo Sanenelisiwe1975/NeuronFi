@@ -334,7 +334,7 @@ function ResolutionRow({ r }: { r: Resolution }) {
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
           <span style={{ fontSize: 9, letterSpacing: "0.12em", color: "#b9a8e8", fontWeight: 500 }}>KITE ATTESTATION</span>
           <a
-            href={`${process.env["NEXT_PUBLIC_KITE_EXPLORER_URL"] ?? "https://explorer.kite.ai"}/tx/${r.attestationHash}`}
+            href={`${process.env["NEXT_PUBLIC_KITE_EXPLORER_URL"] ?? "https://testnet.kitescan.ai"}/tx/${r.attestationHash}`}
             target="_blank"
             rel="noopener noreferrer"
             style={{ fontSize: 10, color: "#7b62c9", fontFamily: "monospace", textDecoration: "none" }}
@@ -736,7 +736,7 @@ export default function PredictionMarketsPage() {
                     ))}
                   </div>
                   {selected.address && (
-                    <a href={`${process.env["NEXT_PUBLIC_KITE_EXPLORER_URL"] ?? "https://explorer.kite.ai"}/address/${selected.address}`} target="_blank" rel="noreferrer" style={{ display: "block", textAlign: "center", fontSize: 11, color: "#b9a8e8", textDecoration: "none", marginBottom: 12 }}>
+                    <a href={`${process.env["NEXT_PUBLIC_KITE_EXPLORER_URL"] ?? "https://testnet.kitescan.ai"}/address/${selected.address}`} target="_blank" rel="noreferrer" style={{ display: "block", textAlign: "center", fontSize: 11, color: "#b9a8e8", textDecoration: "none", marginBottom: 12 }}>
                       View on Kite Explorer ↗
                     </a>
                   )}
@@ -955,7 +955,7 @@ export default function PredictionMarketsPage() {
                     ))}
                   </div>
                   <a
-                    href={`${process.env["NEXT_PUBLIC_KITE_EXPLORER_URL"] ?? "https://explorer.kite.ai"}/address/${agentState.passportId}`}
+                    href={`${process.env["NEXT_PUBLIC_KITE_EXPLORER_URL"] ?? "https://testnet.kitescan.ai"}/address/${agentState.passportId}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ fontSize: 11, color: "#7b62c9", textDecoration: "none" }}
