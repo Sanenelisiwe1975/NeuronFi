@@ -2,6 +2,7 @@
   "name": "neuronfi",
   "private": true,
   "description": "NeuronFi — Autonomous DeFi Agent on Kite chain | Kite AI Hackathon",
+  "type": "module",
   "license": "Apache-2.0",
   "scripts": {
     "build": "turbo run build",
