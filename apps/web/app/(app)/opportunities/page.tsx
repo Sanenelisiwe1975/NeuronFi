@@ -116,7 +116,7 @@ export default function OpportunitiesPage() {
           </div>
 
           {/* Subtle grid overlay */}
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(0,209,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,209,255,1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none neural-grid-overlay" />
 
           <div className="relative p-8">
             {/* Header row */}
@@ -124,7 +124,7 @@ export default function OpportunitiesPage() {
               <div className="flex items-center gap-4">
                 {/* Brain icon with glow rings */}
                 <div className="relative flex items-center justify-center flex-shrink-0">
-                  <div className="absolute w-14 h-14 rounded-full bg-primary/20 animate-ping" style={{ animationDuration: '3s' }} />
+                  <div className="absolute w-14 h-14 rounded-full bg-primary/20 neural-ping-slow" />
                   <div className="absolute w-11 h-11 rounded-full bg-primary/30 animate-pulse" />
                   <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-primary to-cyan-500 flex items-center justify-center shadow-lg shadow-primary/40">
                     <span className="material-symbols-outlined text-white text-[26px] icon-filled">psychology</span>
@@ -170,7 +170,7 @@ export default function OpportunitiesPage() {
                   <span className="font-manrope font-extrabold text-cyan-300 text-[15px]">94.2%</span>
                 </div>
                 <div className="h-1.5 bg-white/8 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full w-[94%]" style={{ background: 'linear-gradient(90deg, #00677f, #00d1ff)' }} />
+                  <div className="h-full rounded-full w-[94%] neural-confidence-bar" />
                 </div>
               </div>
 
