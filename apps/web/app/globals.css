@@ -45,3 +45,20 @@ a {
   from { transform: translateX(120%); opacity: 0; }
   to   { transform: translateX(0);    opacity: 1; }
 }
+
+/* Neural Reasoning card */
+.neural-card-bg {
+  background: linear-gradient(135deg, #0a1628 0%, #0d1f38 50%, #091420 100%);
+}
+.neural-grid-overlay {
+  background-image:
+    linear-gradient(rgba(0,209,255,1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,209,255,1) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.neural-ping-slow {
+  animation: ping 3s cubic-bezier(0,0,0.2,1) infinite;
+}
+.neural-confidence-bar {
+  background: linear-gradient(90deg, #00677f, #00d1ff);
+}

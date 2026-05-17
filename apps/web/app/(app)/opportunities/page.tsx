@@ -104,39 +104,116 @@ export default function OpportunitiesPage() {
 
       {/* Neural Reasoning + Aggregate EV */}
       <div className="grid grid-cols-12 gap-gutter mb-stack-lg">
-        <div className="col-span-8 bg-white border border-slate-200 rounded-xl card-shadow p-gutter relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-primary-container" />
-          <div className="flex items-center gap-3 mb-stack-md">
-            <span className="material-symbols-outlined text-primary icon-filled">psychology</span>
-            <h2 className="font-manrope font-bold text-h3">Neural Reasoning Summary</h2>
+
+        {/* ── Neural Reasoning Card ─────────────────────────────────────── */}
+        <div className="col-span-8 rounded-2xl overflow-hidden relative" style={{ background: 'linear-gradient(135deg, #0a1628 0%, #0d1f38 50%, #091420 100%)' }}>
+
+          {/* Ambient glows */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <div className="absolute -top-16 -left-16 w-64 h-64 bg-primary/20 rounded-full blur-3xl" />
+            <div className="absolute -bottom-10 right-10 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-32 bg-primary/5 rounded-full blur-2xl" />
           </div>
-          <p className="text-body-lg text-on-surface-variant leading-relaxed mb-stack-md">
-            Market volatility in the <span className="font-semibold text-on-surface">ETH/LST</span> sector has created a temporal divergence in lending rates. My analysis suggests a{' '}
-            <span className="text-tertiary font-bold">14.2% increase</span> in capital efficiency by rotating idle USDC into the new Frax Ether v3 vaults. Macro sentiment indicators are trending towards 0.65 neutral-bullish, justifying a moderate risk exposure increase in automated delta-neutral strategies.
-          </p>
-          <div className="flex gap-stack-md flex-wrap">
-            {[
-              { label: 'Confidence', val: '94.2%' },
-              { label: 'Data Sources', val: '18 Nodes' },
-            ].map(({ label, val }) => (
-              <div key={label} className="flex items-center gap-2 px-3 py-1 bg-surface-container-low border border-slate-200 rounded-full">
-                <span className="text-label-caps text-outline">{label}</span>
-                <span className="text-label-caps font-bold text-primary">{val}</span>
+
+          {/* Subtle grid overlay */}
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(0,209,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,209,255,1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+
+          <div className="relative p-8">
+            {/* Header row */}
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-center gap-4">
+                {/* Brain icon with glow rings */}
+                <div className="relative flex items-center justify-center flex-shrink-0">
+                  <div className="absolute w-14 h-14 rounded-full bg-primary/20 animate-ping" style={{ animationDuration: '3s' }} />
+                  <div className="absolute w-11 h-11 rounded-full bg-primary/30 animate-pulse" />
+                  <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-primary to-cyan-500 flex items-center justify-center shadow-lg shadow-primary/40">
+                    <span className="material-symbols-outlined text-white text-[26px] icon-filled">psychology</span>
+                  </div>
+                </div>
+                <div>
+                  <h2 className="font-manrope font-extrabold text-white text-[20px] leading-tight tracking-tight">
+                    Neural Reasoning Summary
+                  </h2>
+                  <p className="text-[11px] text-slate-400 mt-0.5 font-medium">Claude Sonnet 4.6 · Kite Attestation Registry</p>
+                </div>
               </div>
-            ))}
+
+              {/* Live inferring badge */}
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/15 border border-primary/30 rounded-full flex-shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-cyan-300">Live Inferring</span>
+              </div>
+            </div>
+
+            {/* Reasoning paragraph — Manrope for premium readability */}
+            <div className="mb-6 pl-2 border-l-2 border-primary/40">
+              <p className="font-manrope text-[15px] leading-[1.85] text-slate-300 font-medium">
+                Market volatility in the{' '}
+                <span className="text-white font-bold px-1.5 py-0.5 bg-white/8 rounded">ETH/LST</span>{' '}
+                sector has created a temporal divergence in lending rates. My analysis suggests a{' '}
+                <span className="text-cyan-300 font-extrabold">+14.2% increase</span>{' '}
+                in capital efficiency by rotating idle USDC into the new{' '}
+                <span className="text-white font-semibold">Frax Ether v3 vaults</span>.
+                Macro sentiment is trending at{' '}
+                <span className="text-emerald-400 font-bold">0.65 neutral-bullish</span>
+                , justifying a moderate risk exposure increase in automated{' '}
+                <span className="text-cyan-200 font-semibold italic">delta-neutral strategies</span>.
+              </p>
+            </div>
+
+            {/* Confidence meter + stats */}
+            <div className="space-y-3">
+              {/* Confidence bar */}
+              <div>
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Model Confidence</span>
+                  <span className="font-manrope font-extrabold text-cyan-300 text-[15px]">94.2%</span>
+                </div>
+                <div className="h-1.5 bg-white/8 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full w-[94%]" style={{ background: 'linear-gradient(90deg, #00677f, #00d1ff)' }} />
+                </div>
+              </div>
+
+              {/* Meta chips */}
+              <div className="flex flex-wrap gap-2 pt-1">
+                {[
+                  { icon: 'hub',        label: 'Data Sources', val: '18 Nodes' },
+                  { icon: 'schedule',   label: 'Signal Age',   val: '4m ago' },
+                  { icon: 'smart_toy',  label: 'Model',        val: 'Sonnet 4.6' },
+                  { icon: 'verified',   label: 'Attested',     val: 'On-chain' },
+                ].map(({ icon, label, val }) => (
+                  <div key={label} className="flex items-center gap-1.5 px-2.5 py-1 bg-white/6 border border-white/10 rounded-full hover:bg-white/10 transition-colors">
+                    <span className="material-symbols-outlined text-[12px] text-slate-500">{icon}</span>
+                    <span className="text-[10px] text-slate-500 font-semibold">{label}:</span>
+                    <span className="text-[10px] font-extrabold text-slate-300">{val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="col-span-4 bg-primary text-white rounded-xl card-shadow p-gutter flex flex-col justify-between relative overflow-hidden">
+        {/* ── Aggregate EV Card ─────────────────────────────────────────── */}
+        <div className="col-span-4 bg-primary text-white rounded-2xl card-shadow p-gutter flex flex-col justify-between relative overflow-hidden">
           <div className="absolute -right-12 -top-12 w-48 h-48 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -left-6 -bottom-6 w-32 h-32 bg-cyan-400/15 rounded-full blur-2xl pointer-events-none" />
           <div className="relative">
-            <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Aggregate EV</span>
-            <div className="font-manrope font-bold text-h1 mt-2">
-              $12,492<span className="text-h3 opacity-60">.50</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">Aggregate EV This Cycle</span>
+            <div className="font-manrope font-extrabold text-h1 mt-2 leading-none">
+              $12,492<span className="text-h3 opacity-50">.50</span>
             </div>
-            <p className="text-body-sm mt-stack-sm opacity-80">Expected monthly yield from top 5 suggested actions.</p>
+            <p className="text-body-sm mt-stack-sm opacity-75 leading-relaxed">Expected monthly yield from top 5 suggested actions.</p>
+
+            <div className="grid grid-cols-2 gap-2 mt-5">
+              {[{ label: 'Actions', val: '4' }, { label: 'Avg Confidence', val: '90.2%' }].map(({ label, val }) => (
+                <div key={label} className="bg-white/10 border border-white/15 rounded-xl p-3">
+                  <p className="text-[9px] font-bold uppercase tracking-widest opacity-60 mb-1">{label}</p>
+                  <p className="font-manrope font-bold text-[16px]">{val}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <button type="button" className="relative w-full py-3 bg-white text-primary font-label-caps rounded-lg flex items-center justify-center gap-2 hover:bg-primary-fixed transition-colors mt-6">
+          <button type="button" className="relative w-full py-3 bg-white text-primary font-manrope font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-primary-fixed transition-colors mt-6 shadow-lg shadow-black/20">
             <span className="material-symbols-outlined text-sm icon-filled">bolt</span>
             Execute All Primary Actions
           </button>
