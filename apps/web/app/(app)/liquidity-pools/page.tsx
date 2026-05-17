@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { ToastContainer, ToastData } from 'components/Toast';
 
 const POOLS = [
   { pair: 'ETH / USDC', protocol: 'Uniswap V3', tvl: '$42.8M', apy: '8.4%', vol24h: '$12.4M', myShare: '$45,200', myPct: '0.11%', status: 'In Position', statusColor: 'text-tertiary bg-tertiary/10 border-tertiary/20', fee: '0.05%', risk: 'Low', riskColor: 'text-tertiary' },
@@ -10,13 +11,41 @@ const POOLS = [
   { pair: 'SOL / jitoSOL', protocol: 'Jupiter', tvl: '$92M', apy: '9.8%', vol24h: '$22M', myShare: '—', myPct: '—', status: 'Exit Signal', statusColor: 'text-error bg-error/10 border-error/20', fee: '0.06%', risk: 'Med', riskColor: 'text-amber-500' },
 ];
 
+let nextId = 1;
+
 export default function LiquidityPoolsPage() {
   const [selected, setSelected] = useState(POOLS[0]!);
   const [addAmount, setAddAmount] = useState('');
   const [tab, setTab] = useState<'add' | 'remove'>('add');
+  const [toasts, setToasts] = useState<ToastData[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  const dismiss = useCallback((id: number) => setToasts(t => t.filter(x => x.id !== id)), []);
+
+  const push = useCallback((toast: Omit<ToastData, 'id'>) => {
+    setToasts(t => [...t, { ...toast, id: nextId++ }]);
+  }, []);
+
+  const handleAction = async () => {
+    if (!addAmount || Number(addAmount) <= 0) {
+      push({ type: 'warning', title: 'Enter an amount', msg: `Specify how much to ${tab === 'add' ? 'add' : 'remove'} before confirming.` });
+      return;
+    }
+    setSubmitting(true);
+    await new Promise(r => setTimeout(r, 1200));
+    setSubmitting(false);
+    if (tab === 'add') {
+      push({ type: 'success', title: 'Liquidity Added', msg: `$${Number(addAmount).toLocaleString()} USDC deposited into ${selected.pair} pool.` });
+    } else {
+      push({ type: 'success', title: 'Liquidity Removed', msg: `${addAmount}% of your ${selected.pair} position has been withdrawn.` });
+    }
+    setAddAmount('');
+  };
 
   return (
     <div className="p-8 max-w-[1440px] mx-auto">
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
+
       <div className="mb-8">
         <h1 className="font-manrope font-bold text-[40px] tracking-tight text-on-surface mb-2">Liquidity Pools</h1>
         <p className="text-base text-outline">Monitor and manage LP positions across DeFi protocols. AI-ranked by expected value.</p>
@@ -48,7 +77,7 @@ export default function LiquidityPoolsPage() {
           <div className="bg-white border border-outline-variant rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-outline-variant flex justify-between items-center">
               <h2 className="font-manrope font-semibold text-lg text-on-surface">Available Pools</h2>
-              <span className="text-[10px] font-bold text-outline uppercase tracking-wider">AI-Ranked by EV</span>
+              <span className="text-[10px] font-bold text-outline uppercase tracking-wider">Click a row to manage · AI-Ranked by EV</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
@@ -60,42 +89,49 @@ export default function LiquidityPoolsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant">
-                  {POOLS.map(p => (
-                    <tr
-                      key={p.pair}
-                      onClick={() => setSelected(p)}
-                      className={`cursor-pointer hover:bg-surface-container-low transition-colors ${selected.pair === p.pair ? 'bg-primary/5' : ''}`}
-                    >
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="flex -space-x-1">
-                            {p.pair.split('/').map(t => (
-                              <div key={t} className="w-7 h-7 rounded-full bg-primary/20 border-2 border-white flex items-center justify-center text-[10px] font-bold text-primary">
-                                {t.trim()[0]}
-                              </div>
-                            ))}
+                  {POOLS.map(p => {
+                    const isSelected = selected.pair === p.pair;
+                    return (
+                      <tr
+                        key={p.pair}
+                        onClick={() => setSelected(p)}
+                        className={`cursor-pointer transition-all group ${
+                          isSelected
+                            ? 'bg-primary/8 border-l-4 border-l-primary'
+                            : 'hover:bg-surface-container-low border-l-4 border-l-transparent'
+                        }`}
+                      >
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="flex -space-x-1">
+                              {p.pair.split('/').map(t => (
+                                <div key={t} className={`w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold ${isSelected ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
+                                  {t.trim()[0]}
+                                </div>
+                              ))}
+                            </div>
+                            <div>
+                              <p className={`text-sm font-bold ${isSelected ? 'text-primary' : 'text-on-surface'}`}>{p.pair}</p>
+                              <p className="text-[10px] text-outline">{p.protocol} · {p.fee}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-bold text-on-surface">{p.pair}</p>
-                            <p className="text-[10px] text-outline">{p.protocol} · {p.fee}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 text-sm font-medium text-on-surface">{p.tvl}</td>
-                      <td className="px-4 py-4 text-sm font-bold text-tertiary">{p.apy}</td>
-                      <td className="px-4 py-4 text-sm text-outline">{p.vol24h}</td>
-                      <td className="px-4 py-4 text-sm font-medium text-on-surface">{p.myShare}</td>
-                      <td className={`px-4 py-4 text-sm font-bold ${p.riskColor}`}>{p.risk}</td>
-                      <td className="px-4 py-4">
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${p.statusColor}`}>{p.status}</span>
-                      </td>
-                      <td className="px-4 py-4">
-                        <button type="button" className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
-                          <span className="material-symbols-outlined text-outline text-[18px]">chevron_right</span>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-4 py-4 text-sm font-medium text-on-surface">{p.tvl}</td>
+                        <td className="px-4 py-4 text-sm font-bold text-tertiary">{p.apy}</td>
+                        <td className="px-4 py-4 text-sm text-outline">{p.vol24h}</td>
+                        <td className="px-4 py-4 text-sm font-medium text-on-surface">{p.myShare}</td>
+                        <td className={`px-4 py-4 text-sm font-bold ${p.riskColor}`}>{p.risk}</td>
+                        <td className="px-4 py-4">
+                          <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${p.statusColor}`}>{p.status}</span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className={`material-symbols-outlined text-[18px] transition-colors ${isSelected ? 'text-primary' : 'text-outline group-hover:text-primary'}`}>
+                            {isSelected ? 'chevron_right' : 'chevron_right'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -104,19 +140,19 @@ export default function LiquidityPoolsPage() {
 
         {/* Pool actions panel */}
         <div className="col-span-4 space-y-4">
-          <div className="bg-white border border-outline-variant rounded-xl p-6">
+          <div className="bg-white border border-primary/30 rounded-xl p-6 shadow-lg shadow-primary/5">
             <div className="mb-4">
               <div className="flex items-center gap-2 mb-1">
                 <div className="flex -space-x-1">
                   {selected.pair.split('/').map(t => (
-                    <div key={t} className="w-8 h-8 rounded-full bg-primary/20 border-2 border-white flex items-center justify-center text-[10px] font-bold text-primary">
+                    <div key={t} className="w-8 h-8 rounded-full bg-primary text-white border-2 border-white flex items-center justify-center text-[10px] font-bold">
                       {t.trim()[0]}
                     </div>
                   ))}
                 </div>
                 <h3 className="font-manrope font-bold text-lg text-on-surface">{selected.pair}</h3>
               </div>
-              <p className="text-sm text-outline">{selected.protocol}</p>
+              <p className="text-sm text-outline">{selected.protocol} · Fee: {selected.fee}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3 mb-5">
@@ -124,7 +160,7 @@ export default function LiquidityPoolsPage() {
                 { label: 'APY', val: selected.apy, color: 'text-tertiary' },
                 { label: 'TVL', val: selected.tvl, color: 'text-on-surface' },
                 { label: 'My Share', val: selected.myShare, color: 'text-on-surface' },
-                { label: 'Fee Tier', val: selected.fee, color: 'text-primary' },
+                { label: 'Risk', val: selected.risk, color: selected.riskColor },
               ].map(({ label, val, color }) => (
                 <div key={label} className="p-3 bg-surface-container-low rounded-lg">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-outline mb-1">{label}</p>
@@ -139,15 +175,15 @@ export default function LiquidityPoolsPage() {
                 <button
                   key={t}
                   type="button"
-                  onClick={() => setTab(t)}
-                  className={`flex-1 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${tab === t ? 'bg-white text-primary shadow-sm' : 'text-outline'}`}
+                  onClick={() => { setTab(t); setAddAmount(''); }}
+                  className={`flex-1 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${tab === t ? 'bg-white text-primary shadow-sm' : 'text-outline hover:text-on-surface'}`}
                 >
                   {t === 'add' ? 'Add Liquidity' : 'Remove'}
                 </button>
               ))}
             </div>
 
-            <label className="block mb-3">
+            <label className="block mb-4">
               <span className="text-[11px] font-bold text-outline uppercase tracking-wider">
                 {tab === 'add' ? 'Amount (USDC)' : 'Remove (%)'}
               </span>
@@ -155,20 +191,28 @@ export default function LiquidityPoolsPage() {
                 type="number"
                 value={addAmount}
                 onChange={e => setAddAmount(e.target.value)}
-                placeholder={tab === 'add' ? '0.00' : '0 – 100'}
-                className="mt-1 w-full px-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                placeholder={tab === 'add' ? 'Enter USDC amount' : '0 – 100'}
+                className="mt-1.5 w-full px-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
               />
             </label>
 
             <button
               type="button"
-              className={`w-full py-3 rounded-xl font-manrope font-bold text-sm transition-all ${
+              onClick={handleAction}
+              disabled={submitting}
+              className={`w-full py-3 rounded-xl font-manrope font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-60 ${
                 tab === 'add'
                   ? 'bg-primary text-white hover:opacity-90 shadow-lg shadow-primary/20'
                   : 'bg-error text-white hover:opacity-90 shadow-lg shadow-error/20'
               }`}
             >
-              {tab === 'add' ? `Add Liquidity to ${selected.pair}` : `Remove Liquidity`}
+              {submitting ? (
+                <><span className="material-symbols-outlined text-[18px] animate-spin">refresh</span> Processing…</>
+              ) : tab === 'add' ? (
+                <><span className="material-symbols-outlined text-[18px]">add_circle</span> Add Liquidity to {selected.pair}</>
+              ) : (
+                <><span className="material-symbols-outlined text-[18px]">remove_circle</span> Remove Liquidity</>
+              )}
             </button>
           </div>
 
@@ -178,9 +222,22 @@ export default function LiquidityPoolsPage() {
               <span className="material-symbols-outlined text-primary text-[18px]">auto_awesome</span>
               <span className="text-xs font-bold text-primary uppercase tracking-wider">Agent Recommendation</span>
             </div>
-            <p className="text-sm text-on-surface-variant leading-relaxed">
+            <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
               &ldquo;Rotate 20% of idle USDC into the <span className="font-bold text-on-surface">wETH / stETH</span> pool. LST rate divergence creates a <span className="text-tertiary font-bold">+14.2% EV</span> opportunity over the next 48h.&rdquo;
             </p>
+            <button
+              type="button"
+              onClick={() => {
+                const pool = POOLS.find(p => p.pair === 'wETH / stETH')!;
+                setSelected(pool);
+                setTab('add');
+                push({ type: 'info', title: 'Recommendation Applied', msg: 'wETH / stETH pool selected. Enter your USDC amount to proceed.' });
+              }}
+              className="w-full py-2 bg-primary text-white rounded-lg text-xs font-bold hover:opacity-90 transition-all flex items-center justify-center gap-1.5"
+            >
+              <span className="material-symbols-outlined text-[15px]">auto_awesome</span>
+              Apply Recommendation
+            </button>
           </div>
         </div>
       </div>
