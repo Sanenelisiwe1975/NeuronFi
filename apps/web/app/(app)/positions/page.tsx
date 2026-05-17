@@ -17,6 +17,7 @@ const POSITIONS = [
     lockStatus: 'Committed (2.1% fee)',
     locked: true,
     risk: 32,
+    riskW: 'w-1/3',
     id: 'N-45092',
     leverage: '2.50x',
     margin: '$32,040',
@@ -38,6 +39,7 @@ const POSITIONS = [
     lockStatus: 'Pending Drawdown',
     locked: false,
     risk: 61,
+    riskW: 'w-3/5',
     id: 'N-45088',
     leverage: '1.00x',
     margin: '$155,250',
@@ -59,6 +61,7 @@ const POSITIONS = [
     lockStatus: 'Committed (1.5% fee)',
     locked: true,
     risk: 24,
+    riskW: 'w-1/4',
     id: 'N-45081',
     leverage: '3.00x',
     margin: '$40,267',
@@ -162,10 +165,7 @@ export default function PositionsPage() {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <div className="w-14 h-1 bg-slate-100 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full ${p.risk < 40 ? 'bg-tertiary' : p.risk < 65 ? 'bg-amber-400' : 'bg-error'}`}
-                                style={{ width: `${p.risk}%` }}
-                              />
+                              <div className={`h-full rounded-full ${p.riskW} ${p.risk < 40 ? 'bg-tertiary' : p.risk < 65 ? 'bg-amber-400' : 'bg-error'}`} />
                             </div>
                             <span className="text-[10px] font-bold text-outline">{p.risk}</span>
                           </div>
