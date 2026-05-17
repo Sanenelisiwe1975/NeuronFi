@@ -48,36 +48,38 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
     setConnecting(true);
-    // Retry once — MetaMask service worker sometimes needs a second attempt
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        const accounts = await eth.request({ method: 'eth_requestAccounts' });
-        setWalletAddress(accounts[0] ?? null);
-        setConnecting(false);
-        return;
-      } catch (err: unknown) {
-        const code = (err as { code?: number }).code;
-        const msg  = err instanceof Error ? err.message : String(err);
 
-        if (code === 4001) {
-          // User explicitly rejected
-          setWalletError('Connection rejected. Approve the MetaMask popup to continue.');
-          break;
-        }
-        if (attempt === 1 && msg.includes('Failed to connect')) {
-          // MetaMask service worker not ready — wait 600 ms then retry
-          await new Promise(r => setTimeout(r, 600));
-          continue;
-        }
-        // Extension conflict or unknown error
-        setWalletError(
-          msg.includes('redefine') || msg.includes('Failed to connect')
-            ? 'Wallet extension conflict detected. Disable other EVM wallets in chrome://extensions and refresh.'
-            : msg.slice(0, 100),
-        );
-        break;
+    // Use a race between the wallet request and a 15s timeout so the UI
+    // never hangs indefinitely if the extension is unresponsive.
+    const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>
+      Promise.race([
+        promise,
+        new Promise<T>((_, reject) =>
+          setTimeout(() => reject(new Error('Wallet connection timed out. Open MetaMask and try again.')), ms)
+        ),
+      ]);
+
+    try {
+      const accounts = await withTimeout(
+        eth.request({ method: 'eth_requestAccounts' }),
+        15_000,
+      );
+      setWalletAddress(accounts[0] ?? null);
+    } catch (err: unknown) {
+      const code = (err as { code?: number }).code;
+      const msg  = err instanceof Error ? err.message : String(err);
+
+      if (code === 4001) {
+        setWalletError('Connection rejected. Approve the MetaMask popup to continue.');
+      } else if (msg.includes('timed out')) {
+        setWalletError('Wallet timed out. Make sure MetaMask is unlocked, then try again.');
+      } else if (msg.includes('redefine') || msg.includes('Failed to connect')) {
+        setWalletError('Wallet extension conflict. Disable other EVM wallets in chrome://extensions and refresh.');
+      } else {
+        setWalletError(msg.slice(0, 120));
       }
     }
+
     setConnecting(false);
   }, []);
 
