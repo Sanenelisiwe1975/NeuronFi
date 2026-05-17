@@ -189,35 +189,39 @@ export async function registerAgentPassport(params: {
   const signer = wallet.getSigner();
   const provider = wallet.getProvider();
 
+  // ABI matches AgentPassportRegistry.sol
   const PASSPORT_ABI = [
-    "function register(string name, string[] capabilities, address owner) external returns (bytes32 passportId)",
+    "function register(string name, string[] capabilities, address agentWallet) external returns (bytes32 passportId)",
     "function getPassportId(address owner) external view returns (bytes32)",
+    "function ping(bytes32 passportId) external",
+    "event PassportRegistered(bytes32 indexed passportId, address indexed owner, address indexed agentWallet, string name)",
   ];
 
   const registry = new ethers.Contract(passportAddress, PASSPORT_ABI, signer);
 
-  // Check if already registered
+  // Check if already registered — return existing passportId
   try {
     const existing = await (registry as any).getPassportId(params.owner) as string;
     if (existing && existing !== ethers.ZeroHash) {
+      // Ping to update lastActiveAt
+      try { await (await (registry as any).ping(existing)).wait(); } catch { /* ignore */ }
       return existing;
     }
   } catch { /* not registered yet */ }
 
   void provider;
-  const tx = await (registry as any).register(params.name, params.capabilities, params.owner);
+  const agentWallet = await signer.getAddress();
+  const tx = await (registry as any).register(params.name, params.capabilities, agentWallet);
   const receipt = await tx.wait();
 
-  // Parse PassportRegistered event to get the ID
+  // Parse PassportRegistered event
   const iface = new ethers.Interface([
-    "event PassportRegistered(bytes32 indexed passportId, address indexed owner, string name)",
+    "event PassportRegistered(bytes32 indexed passportId, address indexed owner, address indexed agentWallet, string name)",
   ]);
   for (const log of receipt.logs) {
     try {
       const parsed = iface.parseLog(log);
-      if (parsed?.name === "PassportRegistered") {
-        return parsed.args[0] as string;
-      }
+      if (parsed?.name === "PassportRegistered") return parsed.args[0] as string;
     } catch { /* skip */ }
   }
 
@@ -239,20 +243,37 @@ export async function writeAttestation(params: {
   const wallet = createAgentWallet();
   const signer = wallet.getSigner();
 
+  // ABI matches KiteAttestationRegistry.sol — writeAttestation(bytes32, string)
   const ATTESTATION_ABI = [
-    "function attest(address subject, bytes32 data, address attester) external returns (bytes32 attestationId)",
+    "function writeAttestation(bytes32 contentHash, string calldata rationaleUri) external returns (bytes32 attestationId)",
   ];
 
-  const dataHash = ethers.keccak256(
+  const contentHash = ethers.keccak256(
     ethers.toUtf8Bytes(`${params.marketAddress}:${params.outcome}:${params.rationale}`)
   );
 
+  const rationaleUri = [
+    `market:${params.marketAddress}`,
+    `outcome:${params.outcome}`,
+    `agent:${params.passportId ?? "unknown"}`,
+    `rationale:${params.rationale.slice(0, 200)}`,
+  ].join("|");
+
   const registry = new ethers.Contract(registryAddress, ATTESTATION_ABI, signer);
-  const attester = params.passportId ?? (await signer.getAddress());
 
   try {
-    const tx = await (registry as any).attest(params.marketAddress, dataHash, attester);
+    const tx = await (registry as any).writeAttestation(contentHash, rationaleUri);
     const receipt = await tx.wait();
+    // Return the attestationId from the event, falling back to tx hash
+    const iface = new ethers.Interface([
+      "event AttestationWritten(bytes32 indexed attestationId, bytes32 indexed contentHash, address indexed attestedBy, uint256 attestedAt)",
+    ]);
+    for (const log of receipt.logs) {
+      try {
+        const parsed = iface.parseLog(log);
+        if (parsed?.name === "AttestationWritten") return parsed.args[0] as string;
+      } catch { /* skip */ }
+    }
     return receipt.hash as string;
   } catch {
     return null;
