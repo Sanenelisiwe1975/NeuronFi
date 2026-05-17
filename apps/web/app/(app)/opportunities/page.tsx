@@ -106,7 +106,7 @@ export default function OpportunitiesPage() {
       <div className="grid grid-cols-12 gap-gutter mb-stack-lg">
 
         {/* ── Neural Reasoning Card ─────────────────────────────────────── */}
-        <div className="col-span-8 rounded-2xl overflow-hidden relative" style={{ background: 'linear-gradient(135deg, #0a1628 0%, #0d1f38 50%, #091420 100%)' }}>
+        <div className="col-span-8 rounded-2xl overflow-hidden relative neural-card-bg">
 
           {/* Ambient glows */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
