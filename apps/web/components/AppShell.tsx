@@ -145,8 +145,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           {/* Wallet */}
           <div className="relative">
             {walletError && (
-              <div className="absolute top-12 right-0 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg px-3 py-2 w-64 z-50 shadow-lg">
-                {walletError}
+              <div className="absolute top-12 right-0 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl px-3 py-2.5 w-72 z-50 shadow-lg flex items-start gap-2">
+                <span className="material-symbols-outlined text-red-500 text-[16px] mt-0.5 flex-shrink-0">error</span>
+                <span className="leading-relaxed">{walletError}</span>
               </div>
             )}
             <button
