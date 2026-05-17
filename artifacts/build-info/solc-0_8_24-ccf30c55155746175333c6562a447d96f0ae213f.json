@@ -1,0 +1,46 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_24-ccf30c55155746175333c6562a447d96f0ae213f",
+  "solcVersion": "0.8.24",
+  "solcLongVersion": "0.8.24+commit.e11b9ed9",
+  "compilerType": "solc",
+  "userSourceNameMap": {
+    "contracts/AgentPassportRegistry.sol": "project/contracts/AgentPassportRegistry.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "shanghai",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/AgentPassportRegistry.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\n/**\n * @title AgentPassportRegistry\n * @notice On-chain identity registry for autonomous AI agents on Kite Chain.\n *\n *         Each agent registers once with:\n *         - A human-readable name (\"NeuronFi DeFi Agent\")\n *         - A list of capabilities (e.g. [\"trade\", \"attest\", \"subscribe\"])\n *         - The owner address (the deployer / user who controls the agent)\n *\n *         The registry assigns a unique passportId (bytes32) derived from the\n *         owner address and name. This ID is embedded in every attestation the\n *         agent writes, providing permanent on-chain provenance.\n */\ncontract AgentPassportRegistry {\n    struct AgentPassport {\n        bytes32 passportId;\n        string  name;\n        string[] capabilities;\n        address owner;\n        address agentWallet;    // hot wallet the agent uses to sign txs\n        uint256 registeredAt;\n        uint256 lastActiveAt;\n        bool    active;\n    }\n\n    mapping(bytes32 => AgentPassport) public passports;\n    mapping(address => bytes32)       public ownerToPassportId;   // owner → passportId\n    mapping(address => bytes32)       public walletToPassportId;  // agent wallet → passportId\n\n    bytes32[] public allPassportIds;\n\n    address public owner;\n\n    event PassportRegistered(\n        bytes32 indexed passportId,\n        address indexed owner,\n        address indexed agentWallet,\n        string  name\n    );\n\n    event PassportUpdated(bytes32 indexed passportId, uint256 lastActiveAt);\n    event PassportDeactivated(bytes32 indexed passportId);\n\n    modifier onlyOwner() {\n        require(msg.sender == owner, \"AgentPassportRegistry: not owner\");\n        _;\n    }\n\n    constructor() {\n        owner = msg.sender;\n    }\n\n    // ── Register ──────────────────────────────────────────────────────────\n\n    /**\n     * @notice Register an agent. Can only be called once per owner address.\n     * @param name         Human-readable agent name\n     * @param capabilities List of capability strings e.g. [\"trade\",\"attest\",\"subscribe\"]\n     * @param agentWallet  The agent's hot wallet address (used to sign on-chain actions)\n     * @return passportId  Unique ID for this agent\n     */\n    function register(\n        string calldata  name,\n        string[] calldata capabilities,\n        address agentWallet\n    ) external returns (bytes32 passportId) {\n        require(bytes(name).length > 0, \"AgentPassportRegistry: empty name\");\n        require(agentWallet != address(0), \"AgentPassportRegistry: zero wallet\");\n\n        // Allow re-registration if the previous one is deactivated\n        bytes32 existing = ownerToPassportId[msg.sender];\n        if (existing != bytes32(0)) {\n            require(!passports[existing].active, \"AgentPassportRegistry: already registered\");\n        }\n\n        passportId = keccak256(abi.encodePacked(msg.sender, name, block.timestamp));\n\n        passports[passportId] = AgentPassport({\n            passportId:    passportId,\n            name:          name,\n            capabilities:  capabilities,\n            owner:         msg.sender,\n            agentWallet:   agentWallet,\n            registeredAt:  block.timestamp,\n            lastActiveAt:  block.timestamp,\n            active:        true\n        });\n\n        ownerToPassportId[msg.sender]  = passportId;\n        walletToPassportId[agentWallet] = passportId;\n        allPassportIds.push(passportId);\n\n        emit PassportRegistered(passportId, msg.sender, agentWallet, name);\n    }\n\n    /**\n     * @notice Ping to update lastActiveAt — called by agent on each cycle.\n     */\n    function ping(bytes32 passportId) external {\n        AgentPassport storage p = passports[passportId];\n        require(p.active, \"AgentPassportRegistry: not active\");\n        require(\n            msg.sender == p.owner || msg.sender == p.agentWallet,\n            \"AgentPassportRegistry: not authorized\"\n        );\n        p.lastActiveAt = block.timestamp;\n        emit PassportUpdated(passportId, block.timestamp);\n    }\n\n    /**\n     * @notice Update the agent's hot wallet address.\n     */\n    function updateAgentWallet(bytes32 passportId, address newWallet) external {\n        AgentPassport storage p = passports[passportId];\n        require(msg.sender == p.owner, \"AgentPassportRegistry: not owner\");\n        require(newWallet != address(0), \"AgentPassportRegistry: zero wallet\");\n\n        delete walletToPassportId[p.agentWallet];\n        p.agentWallet = newWallet;\n        walletToPassportId[newWallet] = passportId;\n    }\n\n    function deactivate(bytes32 passportId) external {\n        AgentPassport storage p = passports[passportId];\n        require(msg.sender == p.owner || msg.sender == owner, \"AgentPassportRegistry: not authorized\");\n        p.active = false;\n        emit PassportDeactivated(passportId);\n    }\n\n    // ── View ──────────────────────────────────────────────────────────────\n\n    function getPassportId(address _owner) external view returns (bytes32) {\n        return ownerToPassportId[_owner];\n    }\n\n    function getPassportByWallet(address wallet) external view returns (bytes32) {\n        return walletToPassportId[wallet];\n    }\n\n    function getPassport(bytes32 passportId)\n        external\n        view\n        returns (\n            string memory name,\n            address _owner,\n            address agentWallet,\n            bool active,\n            uint256 registeredAt,\n            uint256 lastActiveAt\n        )\n    {\n        AgentPassport storage p = passports[passportId];\n        return (p.name, p.owner, p.agentWallet, p.active, p.registeredAt, p.lastActiveAt);\n    }\n\n    function getCapabilities(bytes32 passportId) external view returns (string[] memory) {\n        return passports[passportId].capabilities;\n    }\n\n    function totalAgents() external view returns (uint256) {\n        return allPassportIds.length;\n    }\n}\n"
+      }
+    }
+  }
+}
