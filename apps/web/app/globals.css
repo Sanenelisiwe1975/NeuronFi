@@ -40,3 +40,8 @@ a {
 .ai-glow {
   box-shadow: 0 0 0 1px rgba(0, 209, 255, 0.2), 0 0 20px -4px rgba(0, 209, 255, 0.15);
 }
+
+@keyframes slideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
