@@ -160,7 +160,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   : 'bg-primary text-white hover:opacity-90'
               }`}
             >
-              {connecting ? 'Connecting…' : shortAddr ?? 'Connect Wallet'}
+              {connecting ? (
+                <span className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px] animate-spin">refresh</span>
+                  Connecting…
+                </span>
+              ) : shortAddr ?? 'Connect Wallet'}
             </button>
           </div>
         </div>
