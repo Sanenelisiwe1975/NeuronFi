@@ -1,0 +1,14 @@
+[build]
+builder = "nixpacks"
+# Only build @repo/kite (agent dist is pre-compiled and committed).
+# Do NOT run web or docs builds — they require Node 20 and are not needed here.
+buildCommand = "npm ci && npx turbo run build --filter=@repo/kite --filter=@repo/typescript-config"
+
+[deploy]
+# Start directly from pre-compiled dist — no tsc needed at runtime
+startCommand = "node packages/agent/dist/index.js"
+restartPolicyType = "always"
+restartPolicyMaxRetries = 10
+
+[nixpacks]
+nixPkgs = ["nodejs_20"]

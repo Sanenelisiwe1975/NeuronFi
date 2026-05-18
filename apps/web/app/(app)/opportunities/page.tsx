@@ -1,3 +1,10 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import { ToastContainer, ToastData } from 'components/Toast';
+
+let nextId = 1;
+
 function TokenPair({ a, b }: { a: { letter: string; color: string }; b: { letter: string; color: string } }) {
   return (
     <div className="flex -space-x-2 flex-shrink-0">
@@ -12,6 +19,18 @@ function TokenPair({ a, b }: { a: { letter: string; color: string }; b: { letter
 }
 
 export default function OpportunitiesPage() {
+  const [toasts,    setToasts]    = useState<ToastData[]>([]);
+  const [executing, setExecuting] = useState(false);
+  const dismiss = useCallback((id: number) => setToasts(t => t.filter(x => x.id !== id)), []);
+  const push    = useCallback((t: Omit<ToastData, 'id'>) => setToasts(ts => [...ts, { ...t, id: nextId++ }]), []);
+
+  const handleExecuteAll = async () => {
+    setExecuting(true);
+    await new Promise(r => setTimeout(r, 1800));
+    setExecuting(false);
+    push({ type: 'success', title: 'All Actions Queued', msg: '4 primary actions submitted to the agent. Execution begins next cycle.' });
+  };
+
   const OPPS = [
     {
       pair: 'wETH / stETH',
@@ -84,6 +103,7 @@ export default function OpportunitiesPage() {
 
   return (
     <div className="p-margin max-w-[1440px] mx-auto">
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
       {/* Header */}
       <div className="flex justify-between items-end mb-stack-lg">
@@ -213,9 +233,15 @@ export default function OpportunitiesPage() {
               ))}
             </div>
           </div>
-          <button type="button" className="relative w-full py-3 bg-white text-primary font-manrope font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-primary-fixed transition-colors mt-6 shadow-lg shadow-black/20">
-            <span className="material-symbols-outlined text-sm icon-filled">bolt</span>
-            Execute All Primary Actions
+          <button
+            type="button"
+            onClick={handleExecuteAll}
+            disabled={executing}
+            className="relative w-full py-3 bg-white text-primary font-manrope font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-primary-fixed transition-colors mt-6 shadow-lg shadow-black/20 disabled:opacity-60"
+          >
+            {executing
+              ? <><span className="material-symbols-outlined text-sm animate-spin">refresh</span> Queuing…</>
+              : <><span className="material-symbols-outlined text-sm icon-filled">bolt</span> Execute All Primary Actions</>}
           </button>
         </div>
       </div>

@@ -1,6 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { ToastContainer, ToastData } from 'components/Toast';
+
+let nextId = 1;
 
 const BARS: { h: number; label: string }[] = [
   { h: 40, label: 'T-9' },
@@ -53,12 +56,33 @@ function barOpacity(h: number): string {
 }
 
 export default function LogsPage() {
-  const [slippage, setSlippage] = useState(50);
-  const [confidence, setConfidence] = useState(85);
-  const [paused, setPaused] = useState(false);
+  const [slippage,    setSlippage]    = useState(50);
+  const [confidence,  setConfidence]  = useState(85);
+  const [paused,      setPaused]      = useState(false);
+  const [period,      setPeriod]      = useState('24h');
+  const [exporting,   setExporting]   = useState(false);
+  const [toasts,      setToasts]      = useState<ToastData[]>([]);
+
+  const dismiss = useCallback((id: number) => setToasts(t => t.filter(x => x.id !== id)), []);
+  const push    = useCallback((t: Omit<ToastData, 'id'>) => setToasts(ts => [...ts, { ...t, id: nextId++ }]), []);
+
+  const handleExport = async () => {
+    setExporting(true);
+    await new Promise(r => setTimeout(r, 800));
+    const data = { period, slippage: (slippage / 100).toFixed(2) + '%', confidence: confidence + '%', paused, exportedAt: new Date().toISOString(), logs: LOGS };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `neuronfi-logs-${period}.json`; a.click();
+    URL.revokeObjectURL(url);
+    setExporting(false);
+    push({ type: 'success', title: 'Exported', msg: `neuronfi-logs-${period}.json downloaded.` });
+  };
 
   return (
     <div className="p-8 max-w-[1440px] mx-auto">
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
+
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
         <div>
@@ -67,14 +91,29 @@ export default function LogsPage() {
           </h1>
           <p className="text-base text-outline mt-2">Real-time Bayesian inference and agent neural telemetry.</p>
         </div>
-        <div className="flex gap-3">
-          <button type="button" className="flex items-center gap-2 px-4 py-2 bg-white border border-outline-variant rounded-xl text-[12px] font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors">
-            <span className="material-symbols-outlined text-[16px]">download</span>
-            Export Data
-          </button>
-          <button type="button" className="flex items-center gap-2 px-4 py-2 bg-white border border-outline-variant rounded-xl text-[12px] font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors">
-            <span className="material-symbols-outlined text-[16px]">calendar_today</span>
-            Last 24h
+        <div className="flex gap-3 items-center">
+          {/* Period selector */}
+          <div className="flex bg-surface-container-low border border-outline-variant rounded-xl p-1">
+            {['1h', '24h', '7d', '30d'].map(p => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPeriod(p)}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors ${period === p ? 'bg-white text-primary shadow-sm' : 'text-outline hover:text-on-surface'}`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exporting}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-outline-variant rounded-xl text-[12px] font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors disabled:opacity-60"
+          >
+            {exporting
+              ? <><span className="material-symbols-outlined text-[16px] animate-spin">refresh</span> Exporting…</>
+              : <><span className="material-symbols-outlined text-[16px]">download</span> Export Data</>}
           </button>
         </div>
       </div>

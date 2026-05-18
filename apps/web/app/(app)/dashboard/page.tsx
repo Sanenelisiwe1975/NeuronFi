@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface AgentState { status: string; iteration: number; winRate: string; }
 interface Market { marketId: string; question: string; volumeUsdt?: string; }
@@ -9,12 +10,16 @@ interface Market { marketId: string; question: string; volumeUsdt?: string; }
 const SPARKLINE = "0,62 54,46 108,54 162,28 216,38 270,12 324,24 378,4 432,16 540,6";
 
 const FEED = [
-  { dot: 'bg-cyan-400', ring: 'ring-cyan-400/30', label: 'Trade Execution', labelColor: 'text-cyan-400', time: 'Just now', msg: 'Rebalanced ETH-USDC LP range to $2,350–$2,500. Slippage: 0.02%.', txHash: '0x4a2…9f3e' },
-  { dot: 'bg-slate-600', ring: null, label: 'Reasoning', labelColor: 'text-slate-400', time: '12m ago', msg: '"Volatility index increasing. Shifting 15% of capital to low-leverage stable pools."', txHash: null },
-  { dot: 'bg-emerald-500', ring: 'ring-emerald-500/30', label: 'Attestation', labelColor: 'text-slate-400', time: '45m ago', msg: 'Proof-of-Logic written to Kite Attestation Registry. Verified.', txHash: null },
+  { dot: 'bg-cyan-400',    ring: 'ring-cyan-400/30',    label: 'Trade Execution', labelColor: 'text-cyan-400',          time: 'Just now',    msg: 'Rebalanced ETH-USDC LP range to $2,350–$2,500. Slippage: 0.02%.',                          txHash: '0x4a2…9f3e' },
+  { dot: 'bg-slate-600',   ring: null,                   label: 'Reasoning',       labelColor: 'text-slate-400',         time: '12m ago',     msg: '"Volatility index increasing. Shifting 15% of capital to low-leverage stable pools."',     txHash: null },
+  { dot: 'bg-emerald-500', ring: 'ring-emerald-500/30',  label: 'Attestation',     labelColor: 'text-emerald-400',       time: '45m ago',     msg: 'Proof-of-Logic written to Kite Attestation Registry. Record immutable.',                  txHash: '0x8b1…4d2a' },
+  { dot: 'bg-primary',     ring: 'ring-primary/30',      label: 'Position Opened', labelColor: 'text-primary-container', time: '1h ago',      msg: 'ARB/USDC Long opened at $1.82. Size: $28,000. Leverage: 2.5x. Stop-loss: $1.74.',         txHash: '0xc3d…7e1f' },
+  { dot: 'bg-slate-600',   ring: null,                   label: 'Risk Check',      labelColor: 'text-slate-400',         time: '1h 18m ago',  msg: '"Delta neutrality deviation exceeded 0.04%. Triggered automatic hedge rebalance cycle."',  txHash: null },
+  { dot: 'bg-amber-400',   ring: 'ring-amber-400/30',    label: 'Alert',           labelColor: 'text-amber-400',         time: '2h ago',      msg: 'Gas congestion on Ethereum L1 (48 gwei). Auto-batching enabled to reduce execution cost.', txHash: null },
 ];
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [agent, setAgent] = useState<AgentState | null>(null);
   const [markets, setMarkets] = useState<Market[]>([]);
   const [usdcBalance, setUsdcBalance] = useState('—');
@@ -112,18 +117,20 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Sparkline — dark with cyan glow line (premium DeFi aesthetic) */}
+            {/* Sparkline — light background matching reference design */}
             <div className="relative h-48 mx-6 mb-4 rounded-lg bg-surface-container-lowest border border-slate-100 overflow-hidden">
-              <div className="absolute inset-0 opacity-[0.06] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #cbd5e1 1px, transparent 0)', backgroundSize: '24px 24px' }} />
-              <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 540 80">
+              <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #cbd5e1 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+              <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 800 200">
                 <defs>
                   <linearGradient id="grad1" x1="0%" x2="0%" y1="0%" y2="100%">
-                    <stop offset="0%" stopColor="#00677f" stopOpacity="0.18" />
+                    <stop offset="0%" stopColor="#00677f" stopOpacity="1" />
                     <stop offset="100%" stopColor="#00677f" stopOpacity="0" />
                   </linearGradient>
                 </defs>
-                <polyline points={`${SPARKLINE} 540,80 0,80`} fill="url(#grad1)" />
-                <polyline points={SPARKLINE} fill="none" stroke="#00677f" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M0,150 Q50,120 100,140 T200,100 T300,160 T400,80 T500,120 T600,60 T700,90 T800,40"
+                  fill="none" stroke="#00677f" strokeLinecap="round" strokeWidth="3" />
+                <path d="M0,150 Q50,120 100,140 T200,100 T300,160 T400,80 T500,120 T600,60 T700,90 T800,40 L800,200 L0,200 Z"
+                  fill="url(#grad1)" opacity="0.1" />
               </svg>
             </div>
 
@@ -186,8 +193,13 @@ export default function DashboardPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button type="button" className="p-2 hover:bg-slate-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="material-symbols-outlined text-outline text-[18px]">more_vert</span>
+                        <button
+                          type="button"
+                          onClick={() => router.push('/positions')}
+                          title="View full details"
+                          className="p-2 hover:bg-slate-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <span className="material-symbols-outlined text-outline text-[18px]">open_in_new</span>
                         </button>
                       </td>
                     </tr>
@@ -272,13 +284,17 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* Promo / Upgrade Card — from reference design */}
+          {/* Promo / Upgrade Card */}
           <div className="bg-gradient-to-br from-primary to-cyan-700 rounded-xl p-6 text-white card-shadow">
             <h4 className="font-manrope font-bold mb-2">New: Neuron AI v3.0</h4>
             <p className="text-xs opacity-80 mb-4 leading-relaxed">
               Upgrade your agent to unlock cross-chain flashloan arbitrage logic and institutional risk modeling.
             </p>
-            <button type="button" className="w-full py-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-lg text-xs font-bold hover:bg-white/30 transition-all">
+            <button
+              type="button"
+              onClick={() => router.push('/strategy-builder')}
+              className="w-full py-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-lg text-xs font-bold hover:bg-white/30 transition-all"
+            >
               Explore Roadmap
             </button>
           </div>

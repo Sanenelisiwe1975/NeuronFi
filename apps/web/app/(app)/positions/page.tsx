@@ -1,6 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { ToastContainer, ToastData } from 'components/Toast';
+
+let nextId = 1;
 
 const POSITIONS = [
   {
@@ -93,10 +96,65 @@ const RESOLUTIONS = [
 ];
 
 export default function PositionsPage() {
-  const [selected, setSelected] = useState(POSITIONS[0]);
+  const [selected,     setSelected]     = useState(POSITIONS[0]);
+  const [modifying,    setModifying]    = useState(false);
+  const [closing,      setClosing]      = useState(false);
+  const [confirmClose, setConfirmClose] = useState(false);
+  const [newStop,      setNewStop]      = useState('');
+  const [newTp,        setNewTp]        = useState('');
+  const [toasts,       setToasts]       = useState<ToastData[]>([]);
+
+  const dismiss = useCallback((id: number) => setToasts(t => t.filter(x => x.id !== id)), []);
+  const push    = useCallback((toast: Omit<ToastData, 'id'>) => setToasts(t => [...t, { ...toast, id: nextId++ }]), []);
+
+  const handleModify = async () => {
+    if (!newStop && !newTp) { push({ type: 'warning', title: 'Nothing changed', msg: 'Enter a new stop-loss or take-profit value.' }); return; }
+    setModifying(true);
+    await new Promise(r => setTimeout(r, 1100));
+    setModifying(false);
+    setNewStop(''); setNewTp('');
+    push({ type: 'success', title: 'Parameters Updated', msg: `${selected!.asset} — stop-loss and take-profit have been modified on-chain.` });
+  };
+
+  const handleClose = async () => {
+    setClosing(true);
+    await new Promise(r => setTimeout(r, 1400));
+    setClosing(false);
+    setConfirmClose(false);
+    push({ type: 'success', title: 'Position Closed', msg: `${selected!.asset} has been closed. Final PnL: ${selected!.pnl}` });
+  };
 
   return (
     <div className="px-8 py-8 max-w-[1440px] mx-auto">
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
+
+      {/* Emergency Close confirmation overlay */}
+      {confirmClose && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl border border-outline-variant">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center flex-shrink-0">
+                <span className="material-symbols-outlined text-error text-[20px]">warning</span>
+              </div>
+              <h3 className="font-manrope font-bold text-on-surface text-[16px]">Close Position?</h3>
+            </div>
+            <p className="text-sm text-on-surface-variant leading-relaxed mb-6">
+              This will market-close <span className="font-bold text-on-surface">{selected!.asset}</span> immediately at the current price. Current PnL: <span className={`font-bold ${selected!.pos ? 'text-tertiary' : 'text-error'}`}>{selected!.pnl}</span>. This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setConfirmClose(false)}
+                className="flex-1 py-2.5 border border-outline-variant rounded-xl text-sm font-bold text-on-surface hover:bg-surface-container-low transition-colors">
+                Cancel
+              </button>
+              <button type="button" onClick={handleClose} disabled={closing}
+                className="flex-1 py-2.5 bg-error text-white rounded-xl text-sm font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-60">
+                {closing ? <><span className="material-symbols-outlined text-[16px] animate-spin">refresh</span> Closing…</> : 'Confirm Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="font-manrope font-extrabold text-[38px] leading-none tracking-tight text-on-surface">
@@ -332,12 +390,41 @@ export default function PositionsPage() {
                 </div>
               </div>
 
-              {/* Actions */}
-              <button type="button" className="w-full bg-primary text-white py-3.5 rounded-xl font-manrope font-bold text-[13px] shadow-lg shadow-primary/20 hover:opacity-90 transition-all flex items-center justify-center gap-2 mb-2">
-                <span className="material-symbols-outlined text-[16px]">edit</span>
-                Modify Parameters
-              </button>
-              <button type="button" className="w-full bg-transparent text-error border border-error/25 py-3 rounded-xl font-manrope font-bold text-[12px] hover:bg-error/5 transition-all">
+              {/* Modify Parameters inline form */}
+              <div className="mb-4 space-y-3">
+                <p className="text-[9px] font-extrabold uppercase tracking-widest text-outline">Modify Parameters</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[9px] text-outline font-bold uppercase tracking-wider block mb-1">New Stop Loss</label>
+                    <input
+                      type="text"
+                      value={newStop}
+                      onChange={e => setNewStop(e.target.value)}
+                      placeholder={selected!.stop}
+                      className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-[12px] text-on-surface focus:outline-none focus:border-error focus:ring-1 focus:ring-error/20 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-outline font-bold uppercase tracking-wider block mb-1">New Take Profit</label>
+                    <input
+                      type="text"
+                      value={newTp}
+                      onChange={e => setNewTp(e.target.value)}
+                      placeholder={selected!.tp}
+                      className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-[12px] text-on-surface focus:outline-none focus:border-tertiary focus:ring-1 focus:ring-tertiary/20 font-mono"
+                    />
+                  </div>
+                </div>
+                <button type="button" onClick={handleModify} disabled={modifying}
+                  className="w-full bg-primary text-white py-3 rounded-xl font-manrope font-bold text-[13px] shadow-lg shadow-primary/20 hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-60">
+                  {modifying
+                    ? <><span className="material-symbols-outlined text-[16px] animate-spin">refresh</span> Updating…</>
+                    : <><span className="material-symbols-outlined text-[16px]">edit</span> Apply Changes</>}
+                </button>
+              </div>
+              <button type="button" onClick={() => setConfirmClose(true)}
+                className="w-full bg-transparent text-error border border-error/25 py-3 rounded-xl font-manrope font-bold text-[12px] hover:bg-error/5 transition-all flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-[15px]">close</span>
                 Emergency Close Position
               </button>
             </div>
