@@ -26,6 +26,11 @@ export class KiteWallet {
     return this.signer.address;
   }
 
+  /** Returns the wallet itself — used by the agent loop as the AA account. */
+  async getPrimaryAccount(): Promise<KiteWallet> {
+    return this;
+  }
+
   getSigner(): ethers.Wallet {
     return this.signer;
   }

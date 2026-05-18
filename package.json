@@ -31,6 +31,8 @@
     "apps/web",
     "packages/agent",
     "packages/kite",
+    "packages/data",
+    "packages/planner",
     "packages/typescript-config"
   ],
   "dependencies": {

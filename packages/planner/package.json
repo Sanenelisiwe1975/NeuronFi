@@ -1,0 +1,17 @@
+{
+  "name": "@repo/planner",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenClaw LLM planner — converts market signals into structured AgentActions via Claude",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "echo 'planner: pre-compiled'",
+    "dev": "echo 'planner: no dev mode'"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.52.0"
+  }
+}
